@@ -1,0 +1,29 @@
+import { IsOptional, IsString, IsInt, Min, IsUUID } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class QueryParentDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number;
+
+  @ApiPropertyOptional({ example: 'Ram' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-of-school' })
+  @IsOptional()
+  @IsUUID()
+  schoolId?: string;
+}

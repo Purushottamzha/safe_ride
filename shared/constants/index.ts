@@ -1,0 +1,48 @@
+export const ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  SCHOOL_ADMIN: 'SCHOOL_ADMIN',
+  DRIVER: 'DRIVER',
+  PARENT: 'PARENT',
+} as const;
+
+export const TRIP_TYPES = {
+  MORNING: 'MORNING',
+  AFTERNOON: 'AFTERNOON',
+} as const;
+
+export const TRIP_STATUS = {
+  SCHEDULED: 'SCHEDULED',
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export const SCAN_TYPES = {
+  BOARD_IN: 'BOARD_IN',
+  EXIT_OUT: 'EXIT_OUT',
+} as const;
+
+export const ATTENDANCE_STATUS = {
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT',
+  LATE: 'LATE',
+  EXCUSED: 'EXCUSED',
+} as const;
+
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 10,
+  MAX_LIMIT: 100,
+} as const;
+
+export const API_PREFIX = '/api/v1';
+
+export const ERROR_CODES = {
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  FORBIDDEN: 'FORBIDDEN',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  RATE_LIMIT: 'RATE_LIMIT',
+} as const;
