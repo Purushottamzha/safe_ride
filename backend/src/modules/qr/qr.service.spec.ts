@@ -3,12 +3,14 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { QRService } from './qr.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from '../notifications/notification.gateway';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { ScanType, TripStatus, TripType } from '@prisma/client';
 
 describe('QRService', () => {
   let service: QRService;
   let prisma: any;
   let notificationGateway: any;
+  let notificationRules: any;
 
   const mockStudent = {
     id: 'student-1',
@@ -54,12 +56,18 @@ describe('QRService', () => {
     notificationGateway = {
       sendToUser: jest.fn(),
     };
+    notificationRules = {
+      evaluateAndNotify: jest.fn(),
+      handleStudentBoarded: jest.fn(),
+      handleStudentExited: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QRService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationGateway, useValue: notificationGateway },
+        { provide: NotificationRulesService, useValue: notificationRules },
       ],
     }).compile();
 

@@ -32,6 +32,7 @@ import { TrackingModule } from './modules/tracking/tracking.module';
 import { DriverSafetyModule } from './modules/driver-safety/driver-safety.module';
 import { SimulatorModule } from './modules/simulator/simulator.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { DevicesModule } from './modules/devices/devices.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -82,6 +83,7 @@ import configuration from './config/configuration';
     DriverSafetyModule,
     SimulatorModule,
     AnalyticsModule,
+    DevicesModule,
   ],
   providers: [
     {

@@ -1,35 +1,38 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Reflector } from '@nestjs/core';
-import { Observable } from 'rxjs';
+import { PrismaService } from '../../../database/prisma.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class DeviceApiKeyGuard implements CanActivate {
-  constructor(
-    private configService: ConfigService,
-    private reflector: Reflector,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const apiKey = request.headers['x-device-api-key'];
-    const expectedKey = this.configService.get<string>('hardware.deviceApiKey');
-
-    if (!expectedKey) {
-      throw new UnauthorizedException('Device API key not configured on server');
-    }
 
     if (!apiKey) {
       throw new UnauthorizedException('Missing x-device-api-key header');
     }
 
-    if (apiKey !== expectedKey) {
-      throw new UnauthorizedException('Invalid device API key');
+    const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+    const device = await this.prisma.device.findFirst({
+      where: { apiKeyHash: hash, status: 'ACTIVE' },
+    });
+
+    if (!device) {
+      throw new UnauthorizedException('Invalid or inactive device API key');
     }
 
+    await this.prisma.device.update({
+      where: { id: device.id },
+      data: { lastSeenAt: new Date() },
+    });
+
     request.deviceInfo = {
-      deviceId: request.headers['x-device-id'] || 'unknown',
-      deviceType: request.headers['x-device-type'] || 'unknown',
+      deviceId: device.id,
+      deviceName: device.name,
+      deviceType: device.type,
     };
 
     return true;

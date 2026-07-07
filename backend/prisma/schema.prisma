@@ -120,6 +120,18 @@ enum VerificationStatus {
   FAILED
 }
 
+enum DeviceType {
+  WEBCAM_DEMO
+  ESP32_CAM
+  ESP32_GPS
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+}
+
 model School {
   id        String    @id @default(uuid())
   name      String
@@ -141,10 +153,12 @@ model School {
   routes        Route[]
   stops         Stop[]
   trips         Trip[]
-  assignments   Assignment[]
-  notifications Notification[]
-  roles         Role[]
-  attendance    Attendance[]
+  assignments          Assignment[]
+  notifications        Notification[]
+  roles                Role[]
+  attendance           Attendance[]
+  pendingStudentRequests PendingStudentRequest[]
+  devices              Device[]
 
   @@index([code])
   @@index([isActive])
@@ -180,6 +194,7 @@ model User {
   tripVerifications       TripEvent[]              @relation("TripVerification")
   reportedIncidents       Incident[]               @relation("ReportedIncidents")
   resolvedIncidents       Incident[]               @relation("ResolvedIncidents")
+  reviewedPendingRequests PendingStudentRequest[]  @relation("PendingReview")
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
   driverSafetyEvents      DriverSafetyEvent[]
@@ -285,7 +300,7 @@ model PendingStudentRequest {
   status         StudentRegistrationStatus @default(PENDING)
   adminNotes     String?
   reviewedById   String?
-  reviewedBy     User?                     @relation(fields: [reviewedById], references: [id])
+  reviewedBy     User?                     @relation("PendingReview", fields: [reviewedById], references: [id])
   reviewedAt     DateTime?
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
@@ -305,7 +320,8 @@ model Parent {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
-  studentParents StudentParent[]
+  studentParents         StudentParent[]
+  pendingStudentRequests PendingStudentRequest[]
 
   @@map("parents")
 }
@@ -370,11 +386,33 @@ model Bus {
   busAssignments BusAssignment[]
   trips          Trip[]
   incidents      Incident[]
+  devices        Device[]
 
   @@index([plateNumber])
   @@index([schoolId])
   @@index([gpsDeviceId])
   @@map("buses")
+}
+
+model Device {
+  id            String       @id @default(uuid())
+  name          String
+  apiKeyHash    String
+  type          DeviceType
+  status        DeviceStatus @default(ACTIVE)
+  busId         String?
+  bus           Bus?         @relation(fields: [busId], references: [id])
+  schoolId      String?
+  school        School?      @relation(fields: [schoolId], references: [id])
+  lastSeenAt    DateTime?
+  firmwareVersion String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([type])
+  @@map("devices")
 }
 
 model Route {

@@ -59,7 +59,7 @@ describe('HardwareController', () => {
 
   describe('POST /hardware/qr-scan', () => {
     const validDto = {
-      deviceId: 'webcam-demo-001',
+      deviceId: 'device-uuid',
       busId: 'bus-1',
       qrToken: 'valid-qr-token',
       capturedAt: '2026-07-07T08:30:00Z',

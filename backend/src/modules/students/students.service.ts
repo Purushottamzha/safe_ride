@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+/**
+ * TODO — Data retention & parental consent (Group C):
+ * Student photos, QR tokens, and attendance records are PII.
+ * Before any non-demo deployment, capture explicit parental consent
+ * at registration time and implement a scheduled purge policy.
+ * See /docs/device-registry.md for details.
+ */
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -101,19 +108,29 @@ export class StudentsService {
     phone?: string;
     schoolId: string;
     emergencyNotes?: string;
+    profilePicture?: string;
   }) {
+    const dob = new Date(data.dateOfBirth);
+    if (isNaN(dob.getTime())) throw new BadRequestException('Invalid dateOfBirth format');
+    if (dob > new Date()) throw new BadRequestException('Date of birth cannot be in the future');
+
     const studentId = `STU-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     const qrToken = crypto.randomBytes(32).toString('hex');
     const qrExpiresAt = this.calculateTermEndDate();
 
+    if (data.profilePicture) {
+      this.validateImagePayload(data.profilePicture);
+    }
+
     return this.prisma.student.create({
       data: {
         ...data,
-        dateOfBirth: new Date(data.dateOfBirth),
+        dateOfBirth: dob,
         studentId,
         qrToken,
         qrExpiresAt,
+        profilePicture: data.profilePicture || null,
       },
     });
   }
@@ -156,10 +173,31 @@ export class StudentsService {
     });
   }
 
+  private validateImagePayload(base64Payload: string) {
+    const raw = base64Payload.replace(/^data:[^;]+;base64,/, '');
+    const sizeBytes = Math.ceil((raw.length * 3) / 4);
+    const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
+    const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+
+    if (sizeBytes > MAX_IMAGE_SIZE_BYTES) {
+      throw new BadRequestException(
+        `Profile image exceeds 2MB limit (${(sizeBytes / (1024 * 1024)).toFixed(1)}MB detected)`,
+      );
+    }
+
+    const mimeMatch = base64Payload.match(/^data:([^;]+);base64,/);
+    if (mimeMatch && !ALLOWED_IMAGE_MIMES.includes(mimeMatch[1])) {
+      throw new BadRequestException(`Unsupported image type "${mimeMatch[1]}". Allowed: ${ALLOWED_IMAGE_MIMES.join(', ')}`);
+    }
+  }
+
   private calculateTermEndDate(): Date {
     const now = new Date();
-    const year = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
-    return new Date(year, 5, 30, 23, 59, 59);
+    const june30ThisYear = new Date(now.getFullYear(), 5, 30, 23, 59, 59);
+    if (now <= june30ThisYear) {
+      return june30ThisYear;
+    }
+    return new Date(now.getFullYear() + 1, 5, 30, 23, 59, 59);
   }
 
   async softDelete(id: string): Promise<void> {

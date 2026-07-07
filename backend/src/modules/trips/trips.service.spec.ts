@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from '../notifications/notification.gateway';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { IncidentsService } from '../incidents/incidents.service';
 import { TripStatus, TripType } from '@prisma/client';
 
@@ -10,6 +11,8 @@ describe('TripsService', () => {
   let service: TripsService;
   let prisma: any;
   let notificationGateway: any;
+  let notificationRules: any;
+  let mockIncidentsService: any;
 
   const mockTrip = {
     id: 'trip-1',
@@ -54,8 +57,12 @@ describe('TripsService', () => {
       sendToUser: jest.fn(),
       sendToSchool: jest.fn(),
     };
+    notificationRules = {
+      handleTripStarted: jest.fn(),
+      handleTripCompleted: jest.fn(),
+    };
 
-    const mockIncidentsService = {
+    mockIncidentsService = {
       create: jest.fn(),
     };
 
@@ -64,6 +71,7 @@ describe('TripsService', () => {
         TripsService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationGateway, useValue: notificationGateway },
+        { provide: NotificationRulesService, useValue: notificationRules },
         { provide: IncidentsService, useValue: mockIncidentsService },
       ],
     }).compile();
@@ -162,8 +170,7 @@ describe('TripsService', () => {
     });
 
     it('should create Incident and complete when force=true with unaccounted students', async () => {
-      const incidentsService = module.get<IncidentsService>(IncidentsService);
-      jest.spyOn(incidentsService, 'create').mockResolvedValue({} as any);
+      jest.spyOn(mockIncidentsService, 'create').mockResolvedValue({} as any);
 
       prisma.trip.findFirst.mockResolvedValue({
         ...mockTrip,
@@ -192,7 +199,7 @@ describe('TripsService', () => {
       });
 
       expect(result.status).toBe(TripStatus.COMPLETED);
-      expect(incidentsService.create).toHaveBeenCalledWith(
+      expect(mockIncidentsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Students not confirmed exited',
           severity: 'MEDIUM',

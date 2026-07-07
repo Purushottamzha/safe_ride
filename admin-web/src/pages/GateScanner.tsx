@@ -8,11 +8,10 @@ import {
   TextField,
   MenuItem,
   Alert,
-  Avatar,
   Chip,
-  CircularProgress,
   Dialog,
   DialogContent,
+  Link,
 } from '@mui/material';
 import {
   QrCodeScanner,
@@ -20,14 +19,16 @@ import {
   CheckCircle,
   Error as ErrorIcon,
   Close,
+  Refresh,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import api from '../services/api';
 import { busService } from '../services/buses';
 
-const DEVICE_ID = 'webcam-demo-001';
 const DEBOUNCE_MS = 3000;
+const MAX_RETRIES = 3;
+const RETRY_BACKOFF_MS = 1000;
 
 type ScanResult = {
   success: boolean;
@@ -46,30 +47,73 @@ type ScanResult = {
   error?: string;
 } | null;
 
+type RetryItem = {
+  qrToken: string;
+  attempts: number;
+  nextRetryAt: number;
+};
+
 export default function GateScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
-  const lastScanRef = useRef<number>(0);
+  const lastScanByToken = useRef<Map<string, number>>(new Map());
+  const retryQueueRef = useRef<RetryItem[]>([]);
+  const retryTimerRef = useRef<number | null>(null);
+  const [scannerPaused, setScannerPaused] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [selectedBusId, setSelectedBusId] = useState('');
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [manualToken, setManualToken] = useState('');
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [showResult, setShowResult] = useState(false);
   const [error, setError] = useState('');
+  const [cameraSupported, setCameraSupported] = useState(true);
+
+  useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraSupported(false);
+      setError('Camera access is not available in this browser or context (HTTPS required). Use manual entry instead.');
+    }
+  }, []);
 
   const { data: busesData } = useQuery({
     queryKey: ['buses'],
     queryFn: () => busService.list({ limit: 200 }),
   });
 
+  const { data: devicesData } = useQuery({
+    queryKey: ['devices'],
+    queryFn: () => api.get('/devices', { params: { limit: 200 } }).then(r => r.data?.data || r.data?.data?.data || []),
+  });
+
   const buses = busesData?.data ?? [];
+  const devices = Array.isArray(devicesData) ? devicesData : [];
+
+  const processRetryQueue = useCallback(() => {
+    const now = Date.now();
+    const pending = retryQueueRef.current.filter(item => item.nextRetryAt <= now);
+    retryQueueRef.current = retryQueueRef.current.filter(item => item.nextRetryAt > now);
+
+    for (const item of pending) {
+      submitScan(item.qrToken).catch(() => {});
+    }
+
+    if (retryQueueRef.current.length > 0) {
+      retryTimerRef.current = window.setTimeout(processRetryQueue, 500);
+    }
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
       setError('');
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraSupported(false);
+        setError('Camera access is not available in this browser or context (HTTPS required). Use manual entry instead.');
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
       });
@@ -80,7 +124,13 @@ export default function GateScanner() {
         setCameraActive(true);
       }
     } catch (err: any) {
-      setError('Camera access denied. Please allow camera permissions or use manual entry.');
+      if (err.name === 'NotAllowedError') {
+        setError('Camera permission denied. Please allow camera access in your browser settings or use manual entry.');
+      } else if (err.name === 'NotFoundError') {
+        setError('No camera hardware found. Use manual entry instead.');
+      } else {
+        setError(`Camera error: ${err.message || 'Unknown'}. Use manual entry.`);
+      }
     }
   }, []);
 
@@ -101,7 +151,7 @@ export default function GateScanner() {
 
   const decodeQR = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !selectedBusId) return;
-    if (Date.now() - lastScanRef.current < DEBOUNCE_MS) return;
+    if (scannerPaused) return;
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -119,13 +169,17 @@ export default function GateScanner() {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
 
       if (code && code.data) {
-        lastScanRef.current = Date.now();
+        const now = Date.now();
+        const lastScan = lastScanByToken.current.get(code.data) || 0;
+        if (now - lastScan < DEBOUNCE_MS) return;
+
+        lastScanByToken.current.set(code.data, now);
         await submitScan(code.data);
       }
     } catch {
       // jsQR not installed or error
     }
-  }, [selectedBusId]);
+  }, [selectedBusId, scannerPaused]);
 
   useEffect(() => {
     if (cameraActive && selectedBusId) {
@@ -139,26 +193,54 @@ export default function GateScanner() {
   }, [cameraActive, selectedBusId, decodeQR]);
 
   useEffect(() => {
-    return () => { stopCamera(); };
+    return () => { stopCamera(); if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
   }, [stopCamera]);
 
-  const submitScan = async (qrToken: string) => {
+  const submitScan = async (qrToken: string, isRetry = false): Promise<void> => {
     try {
       setError('');
+      const deviceId = selectedDeviceId || 'unknown';
       const { data } = await api.post('/hardware/qr-scan', {
-        deviceId: DEVICE_ID,
+        deviceId,
         busId: selectedBusId,
         qrToken,
         capturedAt: new Date().toISOString(),
       });
       setScanResult({ success: true, ...data });
       setShowResult(true);
-      setTimeout(() => { setShowResult(false); setScanResult(null); }, 3000);
+      setScannerPaused(true);
+      setTimeout(() => { setShowResult(false); setScanResult(null); setScannerPaused(false); }, 3000);
     } catch (err: any) {
+      const status = err.response?.status;
       const message = err.response?.data?.message || 'Scan failed';
+
+      if (!status || status >= 500 || err.code === 'ERR_NETWORK') {
+        const existing = retryQueueRef.current.find(r => r.qrToken === qrToken);
+        if (!existing) {
+          retryQueueRef.current.push({ qrToken, attempts: 1, nextRetryAt: Date.now() + RETRY_BACKOFF_MS });
+          if (!retryTimerRef.current) {
+            retryTimerRef.current = window.setTimeout(processRetryQueue, RETRY_BACKOFF_MS);
+          }
+          setScanResult({ success: false, error: `${message} — queued for retry (1/${MAX_RETRIES})` });
+          setShowResult(true);
+          setScannerPaused(true);
+          setTimeout(() => { setShowResult(false); setScanResult(null); setScannerPaused(false); }, 3000);
+          return;
+        } else if (existing.attempts < MAX_RETRIES) {
+          existing.attempts++;
+          existing.nextRetryAt = Date.now() + RETRY_BACKOFF_MS * Math.pow(2, existing.attempts - 1);
+          if (!retryTimerRef.current) {
+            retryTimerRef.current = window.setTimeout(processRetryQueue, RETRY_BACKOFF_MS * Math.pow(2, existing.attempts - 1));
+          }
+          return;
+        }
+        retryQueueRef.current = retryQueueRef.current.filter(r => r.qrToken !== qrToken);
+      }
+
       setScanResult({ success: false, error: message });
       setShowResult(true);
-      setTimeout(() => { setShowResult(false); setScanResult(null); }, 3000);
+      setScannerPaused(true);
+      setTimeout(() => { setShowResult(false); setScanResult(null); setScannerPaused(false); }, 3000);
     }
   };
 
@@ -178,18 +260,23 @@ export default function GateScanner() {
         subtitle="Scan student QR codes at the bus gate"
       />
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
+      {!cameraSupported && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Camera not available in this context. Use <strong>Manual Entry</strong> below to scan QR codes by pasting tokens.
+        </Alert>
+      )}
 
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end', mb: 2, flexWrap: 'wrap' }}>
             <TextField
               select
               size="small"
               label="Bus / Gate"
               value={selectedBusId}
               onChange={(e) => setSelectedBusId(e.target.value)}
-              sx={{ minWidth: 250 }}
+              sx={{ minWidth: 200 }}
             >
               <MenuItem value="">Select a bus...</MenuItem>
               {buses.map((bus: any) => (
@@ -199,11 +286,27 @@ export default function GateScanner() {
               ))}
             </TextField>
 
+            <TextField
+              select
+              size="small"
+              label="Scanner Device"
+              value={selectedDeviceId}
+              onChange={(e) => setSelectedDeviceId(e.target.value)}
+              sx={{ minWidth: 200 }}
+            >
+              <MenuItem value="">Select a device...</MenuItem>
+              {devices.map((dev: any) => (
+                <MenuItem key={dev.id} value={dev.id}>
+                  {dev.name} ({dev.type})
+                </MenuItem>
+              ))}
+            </TextField>
+
             {!cameraActive ? (
               <Button
                 variant="contained"
                 onClick={startCamera}
-                disabled={!selectedBusId}
+                disabled={!selectedBusId || !cameraSupported}
                 startIcon={<QrCodeScanner />}
               >
                 Start Camera
@@ -247,10 +350,19 @@ export default function GateScanner() {
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: cameraActive ? 'block' : 'none' }}
             />
             {!cameraActive && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 1 }}>
                 <Typography color="grey.500">
-                  {selectedBusId ? 'Click "Start Camera" to begin scanning' : 'Select a bus and start the camera'}
+                  {!cameraSupported
+                    ? 'Camera unavailable — use Manual Entry'
+                    : selectedBusId
+                    ? 'Click "Start Camera" to begin scanning'
+                    : 'Select a bus and start the camera'}
                 </Typography>
+                {!cameraSupported && (
+                  <Button variant="outlined" size="small" onClick={() => setManualEntryOpen(true)} startIcon={<PersonSearch />}>
+                    Open Manual Entry
+                  </Button>
+                )}
               </Box>
             )}
             <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -258,7 +370,7 @@ export default function GateScanner() {
         </CardContent>
       </Card>
 
-      <Dialog open={showResult} onClose={() => { setShowResult(false); setScanResult(null); }} maxWidth="sm">
+      <Dialog open={showResult} onClose={() => { setShowResult(false); setScanResult(null); setScannerPaused(false); }} maxWidth="sm">
         <DialogContent sx={{ textAlign: 'center', py: 4, px: 4 }}>
           {scanResult?.success ? (
             <>

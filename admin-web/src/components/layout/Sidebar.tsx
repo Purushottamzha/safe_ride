@@ -31,6 +31,7 @@ import {
   VerifiedUser as SafetyIcon,
   PendingActions as PendingApprovalsIcon,
   QrCodeScanner as GateScannerIcon,
+  Devices as DevicesIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
@@ -65,6 +66,7 @@ const navItems: NavItem[] = [
   { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
   { label: 'Maintenance', path: '/maintenance', icon: <MaintenanceIcon /> },
   { label: 'Driver Safety', path: '/driver-safety', icon: <SafetyIcon /> },
+  { label: 'Devices', path: '/devices', icon: <DevicesIcon /> },
   { label: 'Gate Scanner', path: '/gate-scanner', icon: <GateScannerIcon /> },
   { label: 'Schools', path: '/schools', icon: <SchoolsIcon />, adminOnly: true },
   { label: 'Users', path: '/users', icon: <UsersIcon />, adminOnly: true },
