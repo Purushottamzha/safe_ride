@@ -16,12 +16,17 @@ export class AssignmentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List assignments with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('schoolId') schoolId?: string, @Query('routeId') routeId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('schoolId') schoolId?: string,
+    @Query('routeId') routeId?: string,
     @Query('isActive') isActive?: string,
   ) {
     return this.assignmentsService.findAll({
-      page, limit, schoolId, routeId,
+      page,
+      limit,
+      schoolId,
+      routeId,
       isActive: isActive !== undefined ? isActive === 'true' : undefined,
     });
   }
@@ -36,7 +41,9 @@ export class AssignmentsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create an assignment' })
-  async create(@Body() data: { name?: string; schoolId: string; routeId: string; isActive?: boolean }) {
+  async create(
+    @Body() data: { name?: string; schoolId: string; routeId: string; isActive?: boolean },
+  ) {
     return this.assignmentsService.create(data);
   }
 
@@ -51,7 +58,8 @@ export class AssignmentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Assign driver to assignment' })
   async addDriver(
-    @Param('id') id: string, @Param('driverId') driverId: string,
+    @Param('id') id: string,
+    @Param('driverId') driverId: string,
     @Body() body?: { isPrimary?: boolean },
   ) {
     return this.assignmentsService.addDriver(id, driverId, body?.isPrimary);
@@ -68,7 +76,8 @@ export class AssignmentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Assign bus to assignment' })
   async addBus(
-    @Param('id') id: string, @Param('busId') busId: string,
+    @Param('id') id: string,
+    @Param('busId') busId: string,
     @Body() body?: { isPrimary?: boolean },
   ) {
     return this.assignmentsService.addBus(id, busId, body?.isPrimary);
@@ -85,7 +94,8 @@ export class AssignmentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Assign student to assignment' })
   async addStudent(
-    @Param('id') id: string, @Param('studentId') studentId: string,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
     @Body() body?: { stopId?: string },
   ) {
     return this.assignmentsService.addStudent(id, studentId, body?.stopId);

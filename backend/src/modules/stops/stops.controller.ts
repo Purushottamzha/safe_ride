@@ -16,12 +16,17 @@ export class StopsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List stops with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
     @Query('isActive') isActive?: string,
   ) {
     return this.stopsService.findAll({
-      page, limit, search, schoolId,
+      page,
+      limit,
+      search,
+      schoolId,
       isActive: isActive !== undefined ? isActive === 'true' : undefined,
     });
   }
@@ -36,10 +41,18 @@ export class StopsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a stop' })
-  async create(@Body() data: {
-    name: string; address: string; latitude?: number; longitude?: number;
-    sequence?: number; isActive?: boolean; schoolId: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      name: string;
+      address: string;
+      latitude?: number;
+      longitude?: number;
+      sequence?: number;
+      isActive?: boolean;
+      schoolId: string;
+    },
+  ) {
     return this.stopsService.create(data);
   }
 

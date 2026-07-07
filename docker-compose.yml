@@ -1,5 +1,3 @@
-version: "3.9"
-
 x-logging: &default-logging
   driver: "json-file"
   options:
@@ -49,7 +47,7 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-saferide_redis_2024}
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD:-saferide_redis_2024} ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -92,6 +90,7 @@ services:
         condition: service_healthy
     networks:
       - backend
+      - frontend
     logging: *default-logging
     deploy:
       resources:

@@ -17,13 +17,29 @@ export class TripsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN', 'DRIVER')
   @ApiOperation({ summary: 'List trips with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('schoolId') schoolId?: string, @Query('status') status?: TripStatus,
-    @Query('type') type?: TripType, @Query('driverId') driverId?: string,
-    @Query('busId') busId?: string, @Query('routeId') routeId?: string,
-    @Query('startDate') startDate?: string, @Query('endDate') endDate?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('schoolId') schoolId?: string,
+    @Query('status') status?: TripStatus,
+    @Query('type') type?: TripType,
+    @Query('driverId') driverId?: string,
+    @Query('busId') busId?: string,
+    @Query('routeId') routeId?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
   ) {
-    return this.tripsService.findAll({ page, limit, schoolId, status, type, driverId, busId, routeId, startDate, endDate });
+    return this.tripsService.findAll({
+      page,
+      limit,
+      schoolId,
+      status,
+      type,
+      driverId,
+      busId,
+      routeId,
+      startDate,
+      endDate,
+    });
   }
 
   @Get(':id')
@@ -36,10 +52,19 @@ export class TripsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a trip' })
-  async create(@Body() data: {
-    type: TripType; scheduledAt: string; driverId?: string; busId?: string;
-    routeId?: string; assignmentId?: string; schoolId: string; notes?: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      type: TripType;
+      scheduledAt: string;
+      driverId?: string;
+      busId?: string;
+      routeId?: string;
+      assignmentId?: string;
+      schoolId: string;
+      notes?: string;
+    },
+  ) {
     return this.tripsService.create(data);
   }
 

@@ -6,7 +6,13 @@ import { Prisma } from '@prisma/client';
 export class RoutesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; limit?: number; search?: string; schoolId?: string; isActive?: boolean }) {
+  async findAll(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    schoolId?: string;
+    isActive?: boolean;
+  }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -23,7 +29,9 @@ export class RoutesService {
 
     const [data, total] = await Promise.all([
       this.prisma.route.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           school: { select: { id: true, name: true } },
@@ -38,7 +46,14 @@ export class RoutesService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -58,8 +73,13 @@ export class RoutesService {
   }
 
   async create(data: {
-    name: string; code: string; direction?: string; distance?: number;
-    duration?: number; isActive?: boolean; schoolId: string;
+    name: string;
+    code: string;
+    direction?: string;
+    distance?: number;
+    duration?: number;
+    isActive?: boolean;
+    schoolId: string;
   }) {
     const existing = await this.prisma.route.findUnique({ where: { code: data.code } });
     if (existing) throw new ConflictException('Route code already exists');
@@ -67,10 +87,17 @@ export class RoutesService {
     return this.prisma.route.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    name: string; code: string; direction: string; distance: number;
-    duration: number; isActive: boolean;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      code: string;
+      direction: string;
+      distance: number;
+      duration: number;
+      isActive: boolean;
+    }>,
+  ) {
     const route = await this.prisma.route.findFirst({ where: { id, deletedAt: null } });
     if (!route) throw new NotFoundException('Route not found');
 
@@ -82,7 +109,13 @@ export class RoutesService {
     return this.prisma.route.update({ where: { id }, data });
   }
 
-  async addStop(routeId: string, stopId: string, sequence: number, distance?: number, duration?: number) {
+  async addStop(
+    routeId: string,
+    stopId: string,
+    sequence: number,
+    distance?: number,
+    duration?: number,
+  ) {
     const route = await this.prisma.route.findFirst({ where: { id: routeId, deletedAt: null } });
     if (!route) throw new NotFoundException('Route not found');
 
@@ -109,6 +142,9 @@ export class RoutesService {
   async softDelete(id: string): Promise<void> {
     const route = await this.prisma.route.findFirst({ where: { id, deletedAt: null } });
     if (!route) throw new NotFoundException('Route not found');
-    await this.prisma.route.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+    await this.prisma.route.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
   }
 }

@@ -16,12 +16,17 @@ export class DriversController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List drivers with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
     @Query('isAvailable') isAvailable?: string,
   ) {
     return this.driversService.findAll({
-      page, limit, search, schoolId,
+      page,
+      limit,
+      search,
+      schoolId,
       isAvailable: isAvailable !== undefined ? isAvailable === 'true' : undefined,
     });
   }
@@ -36,10 +41,17 @@ export class DriversController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a driver' })
-  async create(@Body() data: {
-    userId: string; licenseNumber: string; licenseExpiry: string;
-    emergencyContact?: string; medicalNotes?: string; schoolId: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      userId: string;
+      licenseNumber: string;
+      licenseExpiry: string;
+      emergencyContact?: string;
+      medicalNotes?: string;
+      schoolId: string;
+    },
+  ) {
     return this.driversService.create(data);
   }
 

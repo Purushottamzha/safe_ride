@@ -50,7 +50,9 @@ describe('AuthService', () => {
 
     jwtService = {
       sign: jest.fn().mockReturnValue('mock-token'),
-      verify: jest.fn().mockReturnValue({ sub: 'user-1', email: 'test@saferide.com', role: 'SCHOOL_ADMIN' }),
+      verify: jest
+        .fn()
+        .mockReturnValue({ sub: 'user-1', email: 'test@saferide.com', role: 'SCHOOL_ADMIN' }),
     };
 
     configService = {
@@ -186,9 +188,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException for invalid refresh token', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.refreshToken({ refreshToken: 'invalid-token' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshToken({ refreshToken: 'invalid-token' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

@@ -52,7 +52,10 @@ export class DashboardService {
         },
       }),
       this.prisma.incident.count({
-        where: { ...schoolFilter, status: { in: [IncidentStatus.REPORTED, IncidentStatus.INVESTIGATING] } },
+        where: {
+          ...schoolFilter,
+          status: { in: [IncidentStatus.REPORTED, IncidentStatus.INVESTIGATING] },
+        },
       }),
       this.prisma.tripEvent.findMany({
         where: schoolFilter as Prisma.TripEventWhereInput,

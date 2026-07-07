@@ -16,9 +16,7 @@ import { JwtService } from '@nestjs/jwt';
     credentials: true,
   },
 })
-export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
@@ -29,9 +27,7 @@ export class NotificationGateway
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const token =
-        client.handshake.auth?.token ||
-        (client.handshake.query?.token as string);
+      const token = client.handshake.auth?.token || (client.handshake.query?.token as string);
 
       if (!token) {
         this.logger.warn(`Connection rejected: ${client.id} - No token provided`);
@@ -59,9 +55,7 @@ export class NotificationGateway
       }
       this.connectedClients.get(userId)!.add(client.id);
 
-      this.logger.log(
-        `Client connected: ${client.id} (user:${userId}, role:${role})`,
-      );
+      this.logger.log(`Client connected: ${client.id} (user:${userId}, role:${role})`);
 
       client.emit('connected', {
         userId,
@@ -69,9 +63,7 @@ export class NotificationGateway
         message: 'Connected to notification server',
       });
     } catch (error) {
-      this.logger.warn(
-        `Connection rejected: ${client.id} - ${(error as Error).message}`,
-      );
+      this.logger.warn(`Connection rejected: ${client.id} - ${(error as Error).message}`);
       client.disconnect();
     }
   }
@@ -84,36 +76,24 @@ export class NotificationGateway
         this.connectedClients.delete(userId);
       }
     }
-    this.logger.log(
-      `Client disconnected: ${client.id}${userId ? ` (user:${userId})` : ''}`,
-    );
+    this.logger.log(`Client disconnected: ${client.id}${userId ? ` (user:${userId})` : ''}`);
   }
 
   @SubscribeMessage('subscribe')
-  handleSubscribe(
-    client: Socket,
-    payload: { schoolId: string },
-  ): void {
+  handleSubscribe(client: Socket, payload: { schoolId: string }): void {
     if (payload?.schoolId) {
       client.join(`school:${payload.schoolId}`);
       client.data.schoolId = payload.schoolId;
-      this.logger.log(
-        `Client ${client.id} subscribed to school:${payload.schoolId}`,
-      );
+      this.logger.log(`Client ${client.id} subscribed to school:${payload.schoolId}`);
       client.emit('subscribed', { schoolId: payload.schoolId });
     }
   }
 
   @SubscribeMessage('unsubscribe')
-  handleUnsubscribe(
-    client: Socket,
-    payload: { schoolId: string },
-  ): void {
+  handleUnsubscribe(client: Socket, payload: { schoolId: string }): void {
     if (payload?.schoolId) {
       client.leave(`school:${payload.schoolId}`);
-      this.logger.log(
-        `Client ${client.id} unsubscribed from school:${payload.schoolId}`,
-      );
+      this.logger.log(`Client ${client.id} unsubscribed from school:${payload.schoolId}`);
       client.emit('unsubscribed', { schoolId: payload.schoolId });
     }
   }

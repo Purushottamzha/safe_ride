@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Res,
-  UseGuards,
-  Headers,
-} from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards, Headers } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -38,8 +31,7 @@ export class ExportController {
     @Res() res: Response,
     @Headers('accept') accept: string,
   ) {
-    const effectiveSchoolId =
-      user.role === UserRole.SUPER_ADMIN ? schoolId : user.schoolId;
+    const effectiveSchoolId = user.role === UserRole.SUPER_ADMIN ? schoolId : user.schoolId;
 
     const where: Prisma.AttendanceWhereInput = {};
     if (effectiveSchoolId) where.schoolId = effectiveSchoolId;
@@ -78,11 +70,11 @@ export class ExportController {
       'Student ID': record.student.studentId,
       'First Name': record.student.firstName,
       'Last Name': record.student.lastName,
-      'Grade': record.student.grade,
-      'Section': record.student.section || '',
-      'Date': record.date.toISOString().split('T')[0],
+      Grade: record.student.grade,
+      Section: record.student.section || '',
+      Date: record.date.toISOString().split('T')[0],
       'Trip Type': record.trip?.type || '',
-      'Status': record.status,
+      Status: record.status,
       'Late Minutes': record.lateMinutes,
       'Board Time': record.boardTime?.toISOString() || '',
       'Exit Time': record.exitTime?.toISOString() || '',
@@ -109,10 +101,7 @@ export class ExportController {
     }
 
     res.setHeader('Content-Type', contentType);
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(csv);
   }
 
@@ -128,8 +117,7 @@ export class ExportController {
     @CurrentUser() user: { id: string; role: string; schoolId?: string },
     @Res() res: Response,
   ) {
-    const effectiveSchoolId =
-      user.role === UserRole.SUPER_ADMIN ? schoolId : user.schoolId;
+    const effectiveSchoolId = user.role === UserRole.SUPER_ADMIN ? schoolId : user.schoolId;
 
     const where: Record<string, unknown> = {};
     if (effectiveSchoolId) where.schoolId = effectiveSchoolId;
@@ -151,11 +139,20 @@ export class ExportController {
         },
         orderBy: { createdAt: 'desc' },
       });
-      headers = ['Trip ID', 'Type', 'Status', 'Scheduled At', 'Started At', 'Completed At', 'Bus Plate', 'Bus Number'];
+      headers = [
+        'Trip ID',
+        'Type',
+        'Status',
+        'Scheduled At',
+        'Started At',
+        'Completed At',
+        'Bus Plate',
+        'Bus Number',
+      ];
       data = trips.map((t) => ({
         'Trip ID': t.id,
-        'Type': t.type,
-        'Status': t.status,
+        Type: t.type,
+        Status: t.status,
         'Scheduled At': t.scheduledAt.toISOString(),
         'Started At': t.startedAt?.toISOString() || '',
         'Completed At': t.completedAt?.toISOString() || '',
@@ -170,9 +167,9 @@ export class ExportController {
       headers = ['Incident ID', 'Title', 'Severity', 'Status', 'Created At', 'Resolved At'];
       data = incidents.map((i) => ({
         'Incident ID': i.id,
-        'Title': i.title,
-        'Severity': i.severity,
-        'Status': i.status,
+        Title: i.title,
+        Severity: i.severity,
+        Status: i.status,
         'Created At': i.createdAt.toISOString(),
         'Resolved At': i.resolvedAt?.toISOString() || '',
       }));
@@ -186,9 +183,9 @@ export class ExportController {
         'Student ID': s.studentId,
         'First Name': s.firstName,
         'Last Name': s.lastName,
-        'Grade': s.grade,
-        'Section': s.section || '',
-        'Status': s.isActive ? 'Active' : 'Inactive',
+        Grade: s.grade,
+        Section: s.section || '',
+        Status: s.isActive ? 'Active' : 'Inactive',
       }));
     }
 

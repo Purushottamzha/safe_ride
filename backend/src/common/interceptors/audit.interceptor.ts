@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { PrismaService } from '../../database/prisma.service';
@@ -52,10 +47,7 @@ export class AuditInterceptor implements NestInterceptor {
   private parseEntity(path: string): string {
     const parts = path.split('/').filter(Boolean);
     const entityIndex = parts.findIndex(
-      (p) =>
-        !['api', 'v1', 'v2'].includes(p) &&
-        isNaN(Number(p)) &&
-        !p.startsWith('?'),
+      (p) => !['api', 'v1', 'v2'].includes(p) && isNaN(Number(p)) && !p.startsWith('?'),
     );
     return entityIndex >= 0 ? parts[entityIndex] : 'unknown';
   }

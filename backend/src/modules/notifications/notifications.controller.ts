@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -18,13 +29,18 @@ export class NotificationsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN', 'DRIVER', 'PARENT')
   @ApiOperation({ summary: 'List notifications (users see their own)' })
   async findAll(
-    @Req() req: Request, @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('isRead') isRead?: string, @Query('type') type?: NotificationType,
+    @Req() req: Request,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('isRead') isRead?: string,
+    @Query('type') type?: NotificationType,
   ) {
     const user = (req as any).user;
     const userId = user.role === 'SUPER_ADMIN' ? undefined : user.id;
     return this.notificationsService.findAll({
-      page, limit, userId,
+      page,
+      limit,
+      userId,
       isRead: isRead !== undefined ? isRead === 'true' : undefined,
       type,
     });
@@ -47,10 +63,18 @@ export class NotificationsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a notification' })
-  async create(@Body() data: {
-    type: NotificationType; channel: NotificationChannel; title: string;
-    body: string; data?: Record<string, unknown>; userId?: string; schoolId?: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      type: NotificationType;
+      channel: NotificationChannel;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      userId?: string;
+      schoolId?: string;
+    },
+  ) {
     return this.notificationsService.create(data);
   }
 

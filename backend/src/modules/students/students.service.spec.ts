@@ -42,10 +42,7 @@ describe('StudentsService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        StudentsService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [StudentsService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<StudentsService>(StudentsService);
@@ -116,7 +113,11 @@ describe('StudentsService', () => {
   describe('update', () => {
     it('should modify student data', async () => {
       prisma.student.findFirst.mockResolvedValue(mockStudent);
-      prisma.student.update.mockResolvedValue({ ...mockStudent, firstName: 'Updated', lastName: 'Name' });
+      prisma.student.update.mockResolvedValue({
+        ...mockStudent,
+        firstName: 'Updated',
+        lastName: 'Name',
+      });
 
       const result = await service.update('student-1', { firstName: 'Updated', lastName: 'Name' });
 
@@ -128,7 +129,11 @@ describe('StudentsService', () => {
   describe('softDelete', () => {
     it('should set deletedAt', async () => {
       prisma.student.findFirst.mockResolvedValue(mockStudent);
-      prisma.student.update.mockResolvedValue({ ...mockStudent, deletedAt: new Date(), isActive: false });
+      prisma.student.update.mockResolvedValue({
+        ...mockStudent,
+        deletedAt: new Date(),
+        isActive: false,
+      });
 
       await service.softDelete('student-1');
 

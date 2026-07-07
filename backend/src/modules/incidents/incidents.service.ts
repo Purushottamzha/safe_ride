@@ -7,9 +7,15 @@ export class IncidentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(params: {
-    page?: number; limit?: number; severity?: IncidentSeverity;
-    status?: IncidentStatus; reportedById?: string; tripId?: string;
-    schoolId?: string; startDate?: string; endDate?: string;
+    page?: number;
+    limit?: number;
+    severity?: IncidentSeverity;
+    status?: IncidentStatus;
+    reportedById?: string;
+    tripId?: string;
+    schoolId?: string;
+    startDate?: string;
+    endDate?: string;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
@@ -28,7 +34,9 @@ export class IncidentsService {
 
     const [data, total] = await Promise.all([
       this.prisma.incident.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           reportedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -42,7 +50,14 @@ export class IncidentsService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -50,7 +65,9 @@ export class IncidentsService {
     const incident = await this.prisma.incident.findFirst({
       where: { id, deletedAt: null },
       include: {
-        reportedBy: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        reportedBy: {
+          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        },
         resolvedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
         trip: { select: { id: true, type: true, status: true, scheduledAt: true } },
         student: { select: { id: true, firstName: true, lastName: true, studentId: true } },
@@ -62,10 +79,17 @@ export class IncidentsService {
   }
 
   async create(data: {
-    title: string; description: string; severity?: IncidentSeverity;
-    latitude?: number; longitude?: number; location?: string;
-    reportedById: string; tripId?: string; studentId?: string;
-    busId?: string; imageUrls?: string[];
+    title: string;
+    description: string;
+    severity?: IncidentSeverity;
+    latitude?: number;
+    longitude?: number;
+    location?: string;
+    reportedById: string;
+    tripId?: string;
+    studentId?: string;
+    busId?: string;
+    imageUrls?: string[];
   }) {
     return this.prisma.incident.create({
       data,
@@ -75,11 +99,18 @@ export class IncidentsService {
     });
   }
 
-  async update(id: string, data: Partial<{
-    title: string; description: string; severity: IncidentSeverity;
-    latitude: number; longitude: number; location: string;
-    imageUrls: string[];
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      severity: IncidentSeverity;
+      latitude: number;
+      longitude: number;
+      location: string;
+      imageUrls: string[];
+    }>,
+  ) {
     const incident = await this.prisma.incident.findFirst({ where: { id, deletedAt: null } });
     if (!incident) throw new NotFoundException('Incident not found');
     return this.prisma.incident.update({ where: { id }, data });

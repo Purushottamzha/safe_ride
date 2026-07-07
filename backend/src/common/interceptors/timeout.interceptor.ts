@@ -18,10 +18,7 @@ export class TimeoutInterceptor implements NestInterceptor {
       catchError((err) => {
         if (err instanceof TimeoutError) {
           return throwError(
-            () =>
-              new RequestTimeoutException(
-                `Request timed out after ${this.timeoutMs}ms`,
-              ),
+            () => new RequestTimeoutException(`Request timed out after ${this.timeoutMs}ms`),
           );
         }
         return throwError(() => err);

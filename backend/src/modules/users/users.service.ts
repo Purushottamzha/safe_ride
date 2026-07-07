@@ -93,14 +93,17 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, data: Partial<{
-    firstName: string;
-    lastName: string;
-    phone: string;
-    status: UserStatus;
-    profilePicture: string;
-    schoolId: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      firstName: string;
+      lastName: string;
+      phone: string;
+      status: UserStatus;
+      profilePicture: string;
+      schoolId: string;
+    }>,
+  ) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
     });

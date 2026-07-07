@@ -6,7 +6,13 @@ import { Prisma } from '@prisma/client';
 export class DriversService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; limit?: number; search?: string; schoolId?: string; isAvailable?: boolean }) {
+  async findAll(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    schoolId?: string;
+    isAvailable?: boolean;
+  }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -24,11 +30,21 @@ export class DriversService {
 
     const [data, total] = await Promise.all([
       this.prisma.driver.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           user: {
-            select: { id: true, email: true, firstName: true, lastName: true, phone: true, role: true, status: true },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              role: true,
+              status: true,
+            },
           },
           school: { select: { id: true, name: true } },
         },
@@ -38,7 +54,14 @@ export class DriversService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -47,7 +70,16 @@ export class DriversService {
       where: { id, deletedAt: null },
       include: {
         user: {
-          select: { id: true, email: true, firstName: true, lastName: true, phone: true, role: true, status: true, profilePicture: true },
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+            role: true,
+            status: true,
+            profilePicture: true,
+          },
         },
         school: { select: { id: true, name: true } },
       },
@@ -57,13 +89,19 @@ export class DriversService {
   }
 
   async create(data: {
-    userId: string; licenseNumber: string; licenseExpiry: string;
-    emergencyContact?: string; medicalNotes?: string; schoolId: string;
+    userId: string;
+    licenseNumber: string;
+    licenseExpiry: string;
+    emergencyContact?: string;
+    medicalNotes?: string;
+    schoolId: string;
   }) {
     const existing = await this.prisma.driver.findUnique({ where: { userId: data.userId } });
     if (existing) throw new ConflictException('Driver already exists for this user');
 
-    const licenseExists = await this.prisma.driver.findUnique({ where: { licenseNumber: data.licenseNumber } });
+    const licenseExists = await this.prisma.driver.findUnique({
+      where: { licenseNumber: data.licenseNumber },
+    });
     if (licenseExists) throw new ConflictException('License number already exists');
 
     return this.prisma.driver.create({
@@ -75,10 +113,16 @@ export class DriversService {
     });
   }
 
-  async update(id: string, data: Partial<{
-    licenseNumber: string; licenseExpiry: string; isAvailable: boolean;
-    emergencyContact: string; medicalNotes: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      licenseNumber: string;
+      licenseExpiry: string;
+      isAvailable: boolean;
+      emergencyContact: string;
+      medicalNotes: string;
+    }>,
+  ) {
     const driver = await this.prisma.driver.findFirst({ where: { id, deletedAt: null } });
     if (!driver) throw new NotFoundException('Driver not found');
 
@@ -86,7 +130,9 @@ export class DriversService {
     if (data.licenseExpiry) updateData.licenseExpiry = new Date(data.licenseExpiry);
 
     if (data.licenseNumber && data.licenseNumber !== driver.licenseNumber) {
-      const licenseExists = await this.prisma.driver.findUnique({ where: { licenseNumber: data.licenseNumber } });
+      const licenseExists = await this.prisma.driver.findUnique({
+        where: { licenseNumber: data.licenseNumber },
+      });
       if (licenseExists) throw new ConflictException('License number already exists');
     }
 
@@ -96,6 +142,9 @@ export class DriversService {
   async softDelete(id: string): Promise<void> {
     const driver = await this.prisma.driver.findFirst({ where: { id, deletedAt: null } });
     if (!driver) throw new NotFoundException('Driver not found');
-    await this.prisma.driver.update({ where: { id }, data: { deletedAt: new Date(), isAvailable: false } });
+    await this.prisma.driver.update({
+      where: { id },
+      data: { deletedAt: new Date(), isAvailable: false },
+    });
   }
 }

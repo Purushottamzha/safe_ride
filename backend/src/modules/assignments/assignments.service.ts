@@ -6,7 +6,13 @@ import { Prisma } from '@prisma/client';
 export class AssignmentsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; limit?: number; schoolId?: string; routeId?: string; isActive?: boolean }) {
+  async findAll(params: {
+    page?: number;
+    limit?: number;
+    schoolId?: string;
+    routeId?: string;
+    isActive?: boolean;
+  }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -18,22 +24,34 @@ export class AssignmentsService {
 
     const [data, total] = await Promise.all([
       this.prisma.assignment.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           school: { select: { id: true, name: true } },
           route: { select: { id: true, name: true, code: true } },
           driverAssignments: {
-            include: { driver: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } } },
+            include: {
+              driver: {
+                include: {
+                  user: { select: { id: true, firstName: true, lastName: true, email: true } },
+                },
+              },
+            },
           },
           busAssignments: {
             include: { bus: { select: { id: true, plateNumber: true, busNumber: true } } },
           },
           studentAssignments: {
-            include: { student: { select: { id: true, firstName: true, lastName: true, studentId: true } } },
+            include: {
+              student: { select: { id: true, firstName: true, lastName: true, studentId: true } },
+            },
             take: 20,
           },
-          _count: { select: { driverAssignments: true, busAssignments: true, studentAssignments: true } },
+          _count: {
+            select: { driverAssignments: true, busAssignments: true, studentAssignments: true },
+          },
         },
       }),
       this.prisma.assignment.count({ where }),
@@ -41,7 +59,14 @@ export class AssignmentsService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -52,13 +77,35 @@ export class AssignmentsService {
         school: { select: { id: true, name: true } },
         route: { select: { id: true, name: true, code: true, direction: true } },
         driverAssignments: {
-          include: { driver: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } } } },
+          include: {
+            driver: {
+              include: {
+                user: {
+                  select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+                },
+              },
+            },
+          },
         },
         busAssignments: {
-          include: { bus: { select: { id: true, plateNumber: true, busNumber: true, capacity: true } } },
+          include: {
+            bus: { select: { id: true, plateNumber: true, busNumber: true, capacity: true } },
+          },
         },
         studentAssignments: {
-          include: { student: { select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true } }, stop: { select: { id: true, name: true } } },
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                studentId: true,
+                grade: true,
+                section: true,
+              },
+            },
+            stop: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -83,23 +130,31 @@ export class AssignmentsService {
   }
 
   async addDriver(assignmentId: string, driverId: string, isPrimary?: boolean) {
-    const assignment = await this.prisma.assignment.findFirst({ where: { id: assignmentId, deletedAt: null } });
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, deletedAt: null },
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
     return this.prisma.driverAssignment.create({
       data: { assignmentId, driverId, isPrimary: isPrimary ?? true },
-      include: { driver: { include: { user: { select: { id: true, firstName: true, lastName: true } } } } },
+      include: {
+        driver: { include: { user: { select: { id: true, firstName: true, lastName: true } } } },
+      },
     });
   }
 
   async removeDriver(assignmentId: string, driverId: string) {
-    const link = await this.prisma.driverAssignment.findFirst({ where: { assignmentId, driverId } });
+    const link = await this.prisma.driverAssignment.findFirst({
+      where: { assignmentId, driverId },
+    });
     if (!link) throw new NotFoundException('Driver assignment not found');
     await this.prisma.driverAssignment.delete({ where: { id: link.id } });
   }
 
   async addBus(assignmentId: string, busId: string, isPrimary?: boolean) {
-    const assignment = await this.prisma.assignment.findFirst({ where: { id: assignmentId, deletedAt: null } });
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, deletedAt: null },
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
     return this.prisma.busAssignment.create({
@@ -115,17 +170,23 @@ export class AssignmentsService {
   }
 
   async addStudent(assignmentId: string, studentId: string, stopId?: string) {
-    const assignment = await this.prisma.assignment.findFirst({ where: { id: assignmentId, deletedAt: null } });
+    const assignment = await this.prisma.assignment.findFirst({
+      where: { id: assignmentId, deletedAt: null },
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
     return this.prisma.studentAssignment.create({
       data: { assignmentId, studentId, stopId },
-      include: { student: { select: { id: true, firstName: true, lastName: true, studentId: true } } },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true, studentId: true } },
+      },
     });
   }
 
   async removeStudent(assignmentId: string, studentId: string) {
-    const link = await this.prisma.studentAssignment.findFirst({ where: { assignmentId, studentId } });
+    const link = await this.prisma.studentAssignment.findFirst({
+      where: { assignmentId, studentId },
+    });
     if (!link) throw new NotFoundException('Student assignment not found');
     await this.prisma.studentAssignment.delete({ where: { id: link.id } });
   }
@@ -133,6 +194,9 @@ export class AssignmentsService {
   async softDelete(id: string): Promise<void> {
     const assignment = await this.prisma.assignment.findFirst({ where: { id, deletedAt: null } });
     if (!assignment) throw new NotFoundException('Assignment not found');
-    await this.prisma.assignment.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+    await this.prisma.assignment.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
   }
 }

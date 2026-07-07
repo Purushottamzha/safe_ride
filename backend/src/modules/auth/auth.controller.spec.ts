@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { UnauthorizedException, ConflictException, HttpStatus } from '@nestjs/common';
+import { UnauthorizedException, ConflictException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -37,7 +37,14 @@ describe('AuthController', () => {
       };
 
       const expectedResult = {
-        user: { id: 'user-1', email: dto.email, firstName: dto.firstName, lastName: dto.lastName, role: 'SCHOOL_ADMIN', schoolId: null },
+        user: {
+          id: 'user-1',
+          email: dto.email,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: 'SCHOOL_ADMIN',
+          schoolId: null,
+        },
         tokens: { accessToken: 'access-token', refreshToken: 'refresh-token', expiresIn: 900 },
       };
 
@@ -50,10 +57,17 @@ describe('AuthController', () => {
     });
 
     it('should throw ConflictException for duplicate email', async () => {
-      authService.register.mockRejectedValue(new ConflictException('User with this email already exists'));
+      authService.register.mockRejectedValue(
+        new ConflictException('User with this email already exists'),
+      );
 
       await expect(
-        controller.register({ email: 'existing@saferide.com', password: 'SecurePass123!', firstName: 'Test', lastName: 'User' }),
+        controller.register({
+          email: 'existing@saferide.com',
+          password: 'SecurePass123!',
+          firstName: 'Test',
+          lastName: 'User',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -62,7 +76,14 @@ describe('AuthController', () => {
     it('should return tokens on success', async () => {
       const dto: LoginDto = { email: 'test@saferide.com', password: 'SecurePass123!' };
       const expectedResult = {
-        user: { id: 'user-1', email: dto.email, firstName: 'Test', lastName: 'User', role: 'SCHOOL_ADMIN', schoolId: null },
+        user: {
+          id: 'user-1',
+          email: dto.email,
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'SCHOOL_ADMIN',
+          schoolId: null,
+        },
         tokens: { accessToken: 'access-token', refreshToken: 'refresh-token', expiresIn: 900 },
       };
 

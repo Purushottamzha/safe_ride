@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, UserStatus, TripType, BusStatus } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, TripType, BusStatus, AttendanceStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 
@@ -179,6 +179,20 @@ async function main(): Promise<void> {
   });
   console.log(`Created bus: ${bus.plateNumber}`);
 
+  const bus2 = await prisma.bus.create({
+    data: {
+      plateNumber: 'BA 1 JA 5678',
+      busNumber: 'BUS-002',
+      model: 'Ashok Leyland',
+      capacity: 40,
+      year: 2023,
+      color: 'White',
+      status: BusStatus.ACTIVE,
+      schoolId: school.id,
+    },
+  });
+  console.log(`Created bus: ${bus2.plateNumber}`);
+
   const route = await prisma.route.create({
     data: {
       name: 'Baneshwor Route',
@@ -191,13 +205,115 @@ async function main(): Promise<void> {
   });
   console.log(`Created route: ${route.name}`);
 
-  await prisma.trip.create({
+  const route2 = await prisma.route.create({
+    data: {
+      name: 'Pulchowk Route',
+      code: 'RT-PC-01',
+      direction: 'School to Home',
+      distance: 4.5,
+      duration: 25,
+      schoolId: school.id,
+    },
+  });
+  console.log(`Created route: ${route2.name}`);
+
+  const stop1 = await prisma.stop.create({
+    data: { name: 'Baneshwor Stop 1', address: 'Baneshwor, Kathmandu', schoolId: school.id },
+  });
+  const stop2 = await prisma.stop.create({
+    data: { name: 'Baneshwor Stop 2', address: 'New Baneshwor, Kathmandu', schoolId: school.id },
+  });
+  const stop3 = await prisma.stop.create({
+    data: { name: 'Maitighar Stop', address: 'Maitighar, Kathmandu', schoolId: school.id },
+  });
+  const stop4 = await prisma.stop.create({
+    data: { name: 'Pulchowk Stop', address: 'Pulchowk, Lalitpur', schoolId: school.id },
+  });
+  console.log('Created stops');
+
+  await prisma.routeStop.create({ data: { routeId: route.id, stopId: stop1.id, sequence: 1 } });
+  await prisma.routeStop.create({ data: { routeId: route.id, stopId: stop2.id, sequence: 2 } });
+  await prisma.routeStop.create({ data: { routeId: route.id, stopId: stop3.id, sequence: 3 } });
+  await prisma.routeStop.create({ data: { routeId: route2.id, stopId: stop4.id, sequence: 1 } });
+
+  const assignment = await prisma.assignment.create({
+    data: {
+      name: 'Baneshwor Morning Assignment',
+      schoolId: school.id,
+      routeId: route.id,
+    },
+  });
+  console.log(`Created assignment: ${assignment.name}`);
+
+  const assignment2 = await prisma.assignment.create({
+    data: {
+      name: 'Pulchowk Morning Assignment',
+      schoolId: school.id,
+      routeId: route2.id,
+    },
+  });
+  console.log(`Created assignment: ${assignment2.name}`);
+
+  const driver = await prisma.driver.findUnique({ where: { userId: driverUser.id } });
+  if (driver) {
+    await prisma.driverAssignment.create({
+      data: { assignmentId: assignment.id, driverId: driver.id, isPrimary: true },
+    });
+    await prisma.busAssignment.create({
+      data: { assignmentId: assignment.id, busId: bus.id, isPrimary: true },
+    });
+    await prisma.driverAssignment.create({
+      data: { assignmentId: assignment2.id, driverId: driver.id, isPrimary: true },
+    });
+    await prisma.busAssignment.create({
+      data: { assignmentId: assignment2.id, busId: bus2.id, isPrimary: true },
+    });
+  }
+
+  const allStudents = await prisma.student.findMany({ where: { schoolId: school.id } });
+
+  for (let i = 0; i < allStudents.length; i++) {
+    const s = allStudents[i];
+    const targetAssignment = i < 5 ? assignment : assignment2;
+    const targetStop = i < 3 ? stop1 : i < 5 ? stop2 : stop4;
+
+    await prisma.studentAssignment.create({
+      data: {
+        assignmentId: targetAssignment.id,
+        studentId: s.id,
+        stopId: targetStop.id,
+      },
+    });
+
+    if (parent) {
+      const exists = await prisma.studentParent.findUnique({
+        where: { studentId_parentId: { studentId: s.id, parentId: parent.id } },
+      });
+      if (!exists) {
+        await prisma.studentParent.create({
+          data: {
+            studentId: s.id,
+            parentId: parent.id,
+            isPrimary: i === 0,
+            relation: i === 0 ? 'MOTHER' : 'PARENT',
+          },
+        });
+      }
+    }
+  }
+  console.log('Linked all students to parent and assignments');
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const morningTrip = await prisma.trip.create({
     data: {
       type: TripType.MORNING,
       scheduledAt: new Date(new Date().setHours(7, 0, 0, 0)),
       driverId: driverUser.id,
       busId: bus.id,
       routeId: route.id,
+      assignmentId: assignment.id,
       schoolId: school.id,
     },
   });
@@ -212,6 +328,19 @@ async function main(): Promise<void> {
       schoolId: school.id,
     },
   });
+
+  await prisma.attendance.create({
+    data: {
+      studentId: student.id,
+      tripId: morningTrip.id,
+      schoolId: school.id,
+      date: today,
+      type: TripType.MORNING,
+      boardTime: new Date(new Date().setHours(7, 15, 0, 0)),
+      status: AttendanceStatus.PRESENT,
+    },
+  });
+  console.log('Created today attendance record for Hari Sharma');
 
   console.log('Seed completed successfully!');
   console.log('');

@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  Inject,
-  forwardRef,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
@@ -100,9 +93,7 @@ export class AuthService {
     }
 
     if (user.status === 'SUSPENDED' || user.status === 'LOCKED') {
-      throw new UnauthorizedException(
-        'Account is locked. Please contact administrator.',
-      );
+      throw new UnauthorizedException('Account is locked. Please contact administrator.');
     }
 
     if (user.lockoutUntil && user.lockoutUntil > new Date()) {
@@ -162,10 +153,7 @@ export class AuthService {
     this.logger.log(`User logged out: ${userId}`);
   }
 
-  async changePassword(
-    userId: string,
-    dto: ChangePasswordDto,
-  ): Promise<void> {
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -174,10 +162,7 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    const isCurrentPasswordValid = await argon2.verify(
-      user.passwordHash,
-      dto.currentPassword,
-    );
+    const isCurrentPasswordValid = await argon2.verify(user.passwordHash, dto.currentPassword);
 
     if (!isCurrentPasswordValid) {
       throw new UnauthorizedException('Current password is incorrect');
@@ -285,24 +270,14 @@ export class AuthService {
 
     const expiresIn = 15 * 60;
 
-    await this.redis.set(
-      `session:${user.id}`,
-      accessToken,
-      'EX',
-      expiresIn,
-    );
+    await this.redis.set(`session:${user.id}`, accessToken, 'EX', expiresIn);
 
     return { accessToken, refreshToken, expiresIn };
   }
 
-  private async handleFailedLogin(
-    userId: string,
-    attemptCount: number,
-  ): Promise<void> {
+  private async handleFailedLogin(userId: string, attemptCount: number): Promise<void> {
     if (attemptCount >= this.MAX_LOGIN_ATTEMPTS) {
-      const lockoutUntil = new Date(
-        Date.now() + this.LOCKOUT_DURATION_MINUTES * 60 * 1000,
-      );
+      const lockoutUntil = new Date(Date.now() + this.LOCKOUT_DURATION_MINUTES * 60 * 1000);
 
       await this.prisma.user.update({
         where: { id: userId },
@@ -313,21 +288,22 @@ export class AuthService {
         },
       });
 
-      this.logger.warn(
-        `User ${userId} locked out due to ${attemptCount} failed login attempts`,
-      );
+      this.logger.warn(`User ${userId} locked out due to ${attemptCount} failed login attempts`);
 
-      setTimeout(async () => {
-        await this.prisma.user.update({
-          where: { id: userId },
-          data: {
-            loginAttempts: 0,
-            lockoutUntil: null,
-            status: 'ACTIVE',
-          },
-        });
-        this.logger.log(`User ${userId} unlocked after lockout period`);
-      }, this.LOCKOUT_DURATION_MINUTES * 60 * 1000);
+      setTimeout(
+        async () => {
+          await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+              loginAttempts: 0,
+              lockoutUntil: null,
+              status: 'ACTIVE',
+            },
+          });
+          this.logger.log(`User ${userId} unlocked after lockout period`);
+        },
+        this.LOCKOUT_DURATION_MINUTES * 60 * 1000,
+      );
     } else {
       await this.prisma.user.update({
         where: { id: userId },

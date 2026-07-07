@@ -31,9 +31,7 @@ describe('QRService', () => {
     scheduledAt: new Date('2026-01-15T07:00:00Z'),
     schoolId: 'school-1',
     assignment: {
-      studentAssignments: [
-        { studentId: 'student-1', isActive: true },
-      ],
+      studentAssignments: [{ studentId: 'student-1', isActive: true }],
     },
   };
 
@@ -42,7 +40,13 @@ describe('QRService', () => {
       student: { findFirst: jest.fn() },
       trip: { findFirst: jest.fn() },
       tripEvent: { findFirst: jest.fn(), create: jest.fn() },
-      attendance: { findUnique: jest.fn(), findMany: jest.fn(), upsert: jest.fn(), update: jest.fn(), create: jest.fn() },
+      attendance: {
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        upsert: jest.fn(),
+        update: jest.fn(),
+        create: jest.fn(),
+      },
       studentParent: { findMany: jest.fn() },
       notification: { create: jest.fn() },
     };

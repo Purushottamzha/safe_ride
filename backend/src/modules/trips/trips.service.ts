@@ -11,9 +11,18 @@ export class TripsService {
   ) {}
 
   async findAll(params: {
-    page?: number; limit?: number; schoolId?: string; status?: TripStatus;
-    type?: TripType; driverId?: string; busId?: string; routeId?: string;
-    fromDate?: string; toDate?: string; startDate?: string; endDate?: string;
+    page?: number;
+    limit?: number;
+    schoolId?: string;
+    status?: TripStatus;
+    type?: TripType;
+    driverId?: string;
+    busId?: string;
+    routeId?: string;
+    fromDate?: string;
+    toDate?: string;
+    startDate?: string;
+    endDate?: string;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
@@ -43,7 +52,9 @@ export class TripsService {
         take: limit,
         orderBy: { scheduledAt: 'desc' },
         include: {
-          driver: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+          driver: {
+            select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+          },
           bus: { select: { id: true, plateNumber: true, busNumber: true, capacity: true } },
           route: { select: { id: true, name: true, code: true } },
           school: { select: { id: true, name: true } },
@@ -71,7 +82,9 @@ export class TripsService {
       where: { id, deletedAt: null },
       include: {
         driver: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
-        bus: { select: { id: true, plateNumber: true, busNumber: true, capacity: true, model: true } },
+        bus: {
+          select: { id: true, plateNumber: true, busNumber: true, capacity: true, model: true },
+        },
         route: { select: { id: true, name: true, code: true, direction: true } },
         school: { select: { id: true, name: true } },
         assignment: {
@@ -79,7 +92,9 @@ export class TripsService {
             id: true,
             name: true,
             driverAssignments: {
-              include: { driver: { include: { user: { select: { firstName: true, lastName: true } } } } },
+              include: {
+                driver: { include: { user: { select: { firstName: true, lastName: true } } } },
+              },
             },
             busAssignments: {
               include: { bus: { select: { id: true, plateNumber: true, busNumber: true } } },
@@ -90,7 +105,16 @@ export class TripsService {
           orderBy: { createdAt: 'desc' },
           take: 100,
           include: {
-            student: { select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true } },
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                studentId: true,
+                grade: true,
+                section: true,
+              },
+            },
           },
         },
         attendance: {
@@ -105,8 +129,14 @@ export class TripsService {
   }
 
   async create(data: {
-    type: TripType; scheduledAt: string; driverId?: string; busId?: string;
-    routeId?: string; assignmentId?: string; schoolId: string; notes?: string;
+    type: TripType;
+    scheduledAt: string;
+    driverId?: string;
+    busId?: string;
+    routeId?: string;
+    assignmentId?: string;
+    schoolId: string;
+    notes?: string;
   }) {
     const scheduledAt = new Date(data.scheduledAt);
 
@@ -339,7 +369,12 @@ export class TripsService {
           body: `The ${tripLabel} trip (${trip.bus?.plateNumber || 'N/A'}) has been cancelled.${reason ? ` Reason: ${reason}` : ''}`,
           userId: trip.driverId,
           schoolId: trip.schoolId,
-          data: { tripId: id, status: 'CANCELLED', reason, cancelledAt: updatedTrip.cancelledAt } as any,
+          data: {
+            tripId: id,
+            status: 'CANCELLED',
+            reason,
+            cancelledAt: updatedTrip.cancelledAt,
+          } as any,
           sentAt: new Date(),
         },
       });
@@ -355,10 +390,19 @@ export class TripsService {
     return updatedTrip;
   }
 
-  async update(id: string, data: Partial<{
-    type: TripType; status: TripStatus; scheduledAt: string; notes: string;
-    driverId: string; busId: string; routeId: string; assignmentId: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      type: TripType;
+      status: TripStatus;
+      scheduledAt: string;
+      notes: string;
+      driverId: string;
+      busId: string;
+      routeId: string;
+      assignmentId: string;
+    }>,
+  ) {
     const trip = await this.prisma.trip.findFirst({ where: { id, deletedAt: null } });
     if (!trip) throw new NotFoundException('Trip not found');
 

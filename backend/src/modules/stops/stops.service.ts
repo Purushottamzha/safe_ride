@@ -6,7 +6,13 @@ import { Prisma } from '@prisma/client';
 export class StopsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(params: { page?: number; limit?: number; search?: string; schoolId?: string; isActive?: boolean }) {
+  async findAll(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    schoolId?: string;
+    isActive?: boolean;
+  }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
     const skip = (page - 1) * limit;
@@ -23,7 +29,9 @@ export class StopsService {
 
     const [data, total] = await Promise.all([
       this.prisma.stop.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { name: 'asc' },
         include: { school: { select: { id: true, name: true } } },
       }),
@@ -32,7 +40,14 @@ export class StopsService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -49,16 +64,28 @@ export class StopsService {
   }
 
   async create(data: {
-    name: string; address: string; latitude?: number; longitude?: number;
-    sequence?: number; isActive?: boolean; schoolId: string;
+    name: string;
+    address: string;
+    latitude?: number;
+    longitude?: number;
+    sequence?: number;
+    isActive?: boolean;
+    schoolId: string;
   }) {
     return this.prisma.stop.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    name: string; address: string; latitude: number; longitude: number;
-    sequence: number; isActive: boolean;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+      sequence: number;
+      isActive: boolean;
+    }>,
+  ) {
     const stop = await this.prisma.stop.findFirst({ where: { id, deletedAt: null } });
     if (!stop) throw new NotFoundException('Stop not found');
     return this.prisma.stop.update({ where: { id }, data });
@@ -67,6 +94,9 @@ export class StopsService {
   async softDelete(id: string): Promise<void> {
     const stop = await this.prisma.stop.findFirst({ where: { id, deletedAt: null } });
     if (!stop) throw new NotFoundException('Stop not found');
-    await this.prisma.stop.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+    await this.prisma.stop.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
   }
 }

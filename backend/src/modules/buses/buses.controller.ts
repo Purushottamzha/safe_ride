@@ -17,8 +17,10 @@ export class BusesController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List buses with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
     @Query('status') status?: BusStatus,
   ) {
     return this.busesService.findAll({ page, limit, search, schoolId, status });
@@ -34,11 +36,21 @@ export class BusesController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a bus' })
-  async create(@Body() data: {
-    plateNumber: string; busNumber: string; model?: string; capacity: number;
-    year?: number; color?: string; status?: BusStatus; gpsDeviceId?: string;
-    cameraDeviceId?: string; schoolId: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      plateNumber: string;
+      busNumber: string;
+      model?: string;
+      capacity: number;
+      year?: number;
+      color?: string;
+      status?: BusStatus;
+      gpsDeviceId?: string;
+      cameraDeviceId?: string;
+      schoolId: string;
+    },
+  ) {
     return this.busesService.create(data);
   }
 

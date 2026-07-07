@@ -52,10 +52,7 @@ describe('AttendanceService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AttendanceService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [AttendanceService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<AttendanceService>(AttendanceService);
@@ -66,7 +63,13 @@ describe('AttendanceService', () => {
       const records = [
         { ...mockRecord, status: AttendanceStatus.PRESENT },
         { ...mockRecord, id: 'att-2', status: AttendanceStatus.ABSENT },
-        { ...mockRecord, id: 'att-3', status: AttendanceStatus.LATE, isLate: true, lateMinutes: 10 },
+        {
+          ...mockRecord,
+          id: 'att-3',
+          status: AttendanceStatus.LATE,
+          isLate: true,
+          lateMinutes: 10,
+        },
       ];
 
       prisma.attendance.findMany.mockResolvedValue(records);
@@ -87,8 +90,19 @@ describe('AttendanceService', () => {
     it('should return daily breakdown', async () => {
       const records = [
         { ...mockRecord, date: new Date('2026-01-01') },
-        { ...mockRecord, id: 'att-2', date: new Date('2026-01-01'), status: AttendanceStatus.ABSENT },
-        { ...mockRecord, id: 'att-3', date: new Date('2026-01-02'), status: AttendanceStatus.LATE, isLate: true },
+        {
+          ...mockRecord,
+          id: 'att-2',
+          date: new Date('2026-01-01'),
+          status: AttendanceStatus.ABSENT,
+        },
+        {
+          ...mockRecord,
+          id: 'att-3',
+          date: new Date('2026-01-02'),
+          status: AttendanceStatus.LATE,
+          isLate: true,
+        },
       ];
 
       prisma.attendance.findMany.mockResolvedValue(records);

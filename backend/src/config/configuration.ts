@@ -5,7 +5,9 @@ export default () => ({
   logLevel: process.env.LOG_LEVEL || 'debug',
 
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://saferide:saferide_secret_2024@localhost:5432/saferide?schema=public',
+    url:
+      process.env.DATABASE_URL ||
+      'postgresql://saferide:saferide_secret_2024@localhost:5432/saferide?schema=public',
   },
 
   redis: {

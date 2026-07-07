@@ -1,12 +1,19 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import {
-  GPSData, CameraCapture, FaceVerificationResult, IoTEvent,
-  HardwareDevice, IGPSService, ICameraService, IFaceVerificationService, IIoTService,
+  GPSData,
+  CameraCapture,
+  FaceVerificationResult,
+  IoTEvent,
+  HardwareDevice,
+  IGPSService,
+  ICameraService,
+  IFaceVerificationService,
+  IIoTService,
 } from '../../common/interfaces/hardware.interface';
 
 const KATHMANDU_LAT = 27.7172;
-const KATHMANDU_LNG = 85.3240;
+const KATHMANDU_LNG = 85.324;
 
 function addJitter(value: number, range: number): number {
   return value + (Math.random() - 0.5) * range;
@@ -21,12 +28,16 @@ function generateDummyLocation(busId: string): GPSData {
     heading: Math.round(Math.random() * 360),
     timestamp: new Date(),
     accuracy: Math.round(Math.random() * 15 + 3),
-    altitude: Math.round(KATHMANDU_LAT > 27.71 ? 1400 + Math.random() * 100 : 1300 + Math.random() * 100),
+    altitude: Math.round(
+      KATHMANDU_LAT > 27.71 ? 1400 + Math.random() * 100 : 1300 + Math.random() * 100,
+    ),
   };
 }
 
 @Injectable()
-export class HardwareService implements IGPSService, ICameraService, IFaceVerificationService, IIoTService {
+export class HardwareService
+  implements IGPSService, ICameraService, IFaceVerificationService, IIoTService
+{
   private readonly logger = new Logger(HardwareService.name);
   private trackingIntervals: Map<string, NodeJS.Timeout> = new Map();
   private devices: Map<string, HardwareDevice> = new Map();
@@ -55,7 +66,7 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
   async startTracking(busId: string, intervalMs: number): Promise<void> {
     if (this.trackingIntervals.has(busId)) {
       this.logger.warn(`Bus ${busId} is already being tracked. Restarting...`);
-      this.stopTracking(busId);
+      await this.stopTracking(busId);
     }
 
     if (intervalMs < 1000) {
@@ -66,7 +77,9 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
     const interval = setInterval(async () => {
       try {
         const location = generateDummyLocation(busId);
-        this.logger.debug(`Tracking bus ${busId}: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)} @ ${location.speed}km/h`);
+        this.logger.debug(
+          `Tracking bus ${busId}: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)} @ ${location.speed}km/h`,
+        );
 
         await this.prisma.bus.update({
           where: { id: busId },
@@ -109,8 +122,9 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
     });
 
     return events
-      .filter((e): e is typeof e & { latitude: number; longitude: number } =>
-        e.latitude !== null && e.longitude !== null,
+      .filter(
+        (e): e is typeof e & { latitude: number; longitude: number } =>
+          e.latitude !== null && e.longitude !== null,
       )
       .map((e) => ({
         busId,
@@ -125,7 +139,9 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
   }
 
   async captureImage(busId: string, studentId?: string): Promise<CameraCapture> {
-    this.logger.log(`Capturing dummy image for bus ${busId}${studentId ? `, student ${studentId}` : ''}`);
+    this.logger.log(
+      `Capturing dummy image for bus ${busId}${studentId ? `, student ${studentId}` : ''}`,
+    );
     return {
       busId,
       studentId,
@@ -172,7 +188,7 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
     };
   }
 
-  async verifyStudent(studentId: string, imageData: string): Promise<FaceVerificationResult> {
+  async verifyStudent(studentId: string, _imageData: string): Promise<FaceVerificationResult> {
     this.logger.log(`Dummy face verification for student ${studentId}`);
 
     const confidence = 0.85 + Math.random() * 0.15;
@@ -188,9 +204,7 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
   }
 
   async enrollStudent(studentId: string, images: string[]): Promise<void> {
-    this.logger.log(
-      `Dummy face enrollment for student ${studentId} with ${images.length} images`,
-    );
+    this.logger.log(`Dummy face enrollment for student ${studentId} with ${images.length} images`);
   }
 
   async removeStudent(studentId: string): Promise<void> {
@@ -200,9 +214,7 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
   async registerDevice(
     device: Omit<HardwareDevice, 'status' | 'lastHeartbeat'>,
   ): Promise<HardwareDevice> {
-    this.logger.log(
-      `Registering device: ${device.name} (${device.type}) [${device.id}]`,
-    );
+    this.logger.log(`Registering device: ${device.name} (${device.type}) [${device.id}]`);
 
     const registeredDevice: HardwareDevice = {
       ...device,
@@ -290,8 +302,8 @@ export class HardwareService implements IGPSService, ICameraService, IFaceVerifi
     busId: string,
     latitude: number,
     longitude: number,
-    speed?: number,
-    heading?: number,
+    _speed?: number,
+    _heading?: number,
   ) {
     const bus = await this.prisma.bus.findFirst({
       where: { id: busId, deletedAt: null },

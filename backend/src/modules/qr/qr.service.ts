@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from '../notifications/notification.gateway';
 import { Prisma, ScanType } from '@prisma/client';
@@ -33,8 +38,11 @@ export class QRService {
   }
 
   async scanQR(data: {
-    studentId: string; tripId: string; scanType: ScanType;
-    latitude?: number; longitude?: number;
+    studentId: string;
+    tripId: string;
+    scanType: ScanType;
+    latitude?: number;
+    longitude?: number;
   }) {
     const student = await this.prisma.student.findFirst({
       where: { id: data.studentId, deletedAt: null, isActive: true },
@@ -89,7 +97,14 @@ export class QRService {
       },
       include: {
         student: {
-          select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
         },
         trip: {
           select: { id: true, type: true, status: true, scheduledAt: true },
@@ -205,7 +220,11 @@ export class QRService {
     };
 
     for (const rel of parentRelations) {
-      this.notificationGateway.sendToUser(rel.parent.userId, 'attendance:update', notificationPayload);
+      this.notificationGateway.sendToUser(
+        rel.parent.userId,
+        'attendance:update',
+        notificationPayload,
+      );
 
       await this.prisma.notification.create({
         data: {

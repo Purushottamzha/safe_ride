@@ -50,16 +50,7 @@ export class AuditService {
   }
 
   async findAll(params: FindAllParams) {
-    const {
-      page = 1,
-      limit = 20,
-      action,
-      entity,
-      userId,
-      schoolId,
-      startDate,
-      endDate,
-    } = params;
+    const { page = 1, limit = 20, action, entity, userId, schoolId, startDate, endDate } = params;
 
     const where: Prisma.AuditLogWhereInput = {};
 

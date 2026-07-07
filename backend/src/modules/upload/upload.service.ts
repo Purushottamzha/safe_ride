@@ -58,10 +58,7 @@ export class UploadService {
     }
   }
 
-  private validateFile(
-    file: Express.Multer.File,
-    category: 'images' | 'documents',
-  ): void {
+  private validateFile(file: Express.Multer.File, category: 'images' | 'documents'): void {
     if (category === 'images') {
       if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
         throw new BadRequestException(

@@ -26,7 +26,13 @@ export class HardwareController {
     @Param('busId') busId: string,
     @Body() data: { latitude: number; longitude: number; speed?: number; heading?: number },
   ) {
-    return this.hardwareService.processGPSUpdate(busId, data.latitude, data.longitude, data.speed, data.heading);
+    return this.hardwareService.processGPSUpdate(
+      busId,
+      data.latitude,
+      data.longitude,
+      data.speed,
+      data.heading,
+    );
   }
 
   @Get('gps/:busId/history')
@@ -34,7 +40,8 @@ export class HardwareController {
   @ApiOperation({ summary: 'Get GPS route history' })
   async getRouteHistory(
     @Param('busId') busId: string,
-    @Query('startDate') startDate: string, @Query('endDate') endDate: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
   ) {
     return this.hardwareService.getRouteHistory(busId, new Date(startDate), new Date(endDate));
   }
@@ -72,14 +79,31 @@ export class HardwareController {
   @Post('device/register')
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Register a hardware device' })
-  async registerDevice(@Body() data: { id: string; type: string; name: string; model?: string; firmwareVersion?: string }) {
+  async registerDevice(
+    @Body()
+    data: {
+      id: string;
+      type: string;
+      name: string;
+      model?: string;
+      firmwareVersion?: string;
+    },
+  ) {
     return this.hardwareService.registerDevice(data as never);
   }
 
   @Post('event')
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Handle IoT event from hardware' })
-  async handleEvent(@Body() event: { deviceId: string; deviceType: string; eventType: string; payload: Record<string, unknown> }) {
+  async handleEvent(
+    @Body()
+    event: {
+      deviceId: string;
+      deviceType: string;
+      eventType: string;
+      payload: Record<string, unknown>;
+    },
+  ) {
     await this.hardwareService.handleEvent(event as never);
     return { message: 'Event handled' };
   }

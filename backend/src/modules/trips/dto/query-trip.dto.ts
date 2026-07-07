@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, IsUUID, IsEnum, IsDateString } from 'class-validator';
+import { IsOptional, IsInt, Min, IsUUID, IsEnum, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { TripType, TripStatus } from '@prisma/client';

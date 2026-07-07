@@ -17,7 +17,10 @@ async function bootstrap(): Promise<void> {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
-  const corsOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5174');
+  const corsOrigins = configService.get<string>(
+    'CORS_ORIGINS',
+    'http://localhost:5173,http://localhost:5174',
+  );
 
   app.setGlobalPrefix('api/v1');
 
@@ -37,22 +40,24 @@ async function bootstrap(): Promise<void> {
     new TimeoutInterceptor(30000),
   );
 
-  app.use(helmet.default({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        imgSrc: ["'self'", "data:", "blob:"],
+  app.use(
+    helmet.default({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+        },
       },
-    },
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  }));
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(compression());
   app.use(cookieParser());
 
   app.enableCors({
-    origin: corsOrigins.split(',').map(o => o.trim()),
+    origin: corsOrigins.split(',').map((o) => o.trim()),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -63,10 +68,7 @@ async function bootstrap(): Promise<void> {
     .setTitle('SafeRide Nepal API')
     .setDescription('School Bus Management System REST API')
     .setVersion('1.0')
-    .addBearerAuth(
-      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
-      'JWT-auth',
-    )
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT-auth')
     .addTag('Auth', 'Authentication endpoints')
     .addTag('Users', 'User management')
     .addTag('Schools', 'School management')
@@ -103,4 +105,4 @@ async function bootstrap(): Promise<void> {
   logger.log(`Swagger docs at http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+void bootstrap();

@@ -7,15 +7,19 @@ export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private configService: ConfigService) {
-    super(configService.get<string>('redis.url') || 'redis://default:saferide_redis_2024@localhost:6379', {
-      retryStrategy: (times: number) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
+    super(
+      configService.get<string>('redis.url') ||
+        'redis://default:saferide_redis_2024@localhost:6379',
+      {
+        retryStrategy: (times: number) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+        maxRetriesPerRequest: 3,
+        enableReadyCheck: true,
+        lazyConnect: true,
       },
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
-      lazyConnect: true,
-    });
+    );
   }
 
   async onModuleInit(): Promise<void> {

@@ -32,7 +32,9 @@ export class SchoolsService {
     return {
       data,
       meta: {
-        page, limit, total,
+        page,
+        limit,
+        total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page * limit < total,
         hasPreviousPage: page > 1,
@@ -53,17 +55,34 @@ export class SchoolsService {
     return school;
   }
 
-  async create(data: { name: string; code: string; address: string; phone: string; email: string; website?: string; timezone?: string }) {
+  async create(data: {
+    name: string;
+    code: string;
+    address: string;
+    phone: string;
+    email: string;
+    website?: string;
+    timezone?: string;
+  }) {
     const existing = await this.prisma.school.findUnique({ where: { code: data.code } });
     if (existing) throw new ConflictException('School code already exists');
 
     return this.prisma.school.create({ data });
   }
 
-  async update(id: string, data: Partial<{
-    name: string; code: string; address: string; phone: string;
-    email: string; website: string; timezone: string; isActive: boolean;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      code: string;
+      address: string;
+      phone: string;
+      email: string;
+      website: string;
+      timezone: string;
+      isActive: boolean;
+    }>,
+  ) {
     const school = await this.prisma.school.findFirst({ where: { id, deletedAt: null } });
     if (!school) throw new NotFoundException('School not found');
 
@@ -78,6 +97,9 @@ export class SchoolsService {
   async softDelete(id: string): Promise<void> {
     const school = await this.prisma.school.findFirst({ where: { id, deletedAt: null } });
     if (!school) throw new NotFoundException('School not found');
-    await this.prisma.school.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+    await this.prisma.school.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
   }
 }

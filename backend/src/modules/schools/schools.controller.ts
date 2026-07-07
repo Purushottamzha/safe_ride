@@ -15,7 +15,11 @@ export class SchoolsController {
   @Get()
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'List all schools' })
-  async findAll(@Query('page') page?: number, @Query('limit') limit?: number, @Query('search') search?: string) {
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+  ) {
     return this.schoolsService.findAll({ page, limit, search });
   }
 
@@ -29,7 +33,17 @@ export class SchoolsController {
   @Post()
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Create a school' })
-  async create(@Body() data: { name: string; code: string; address: string; phone: string; email: string; website?: string }) {
+  async create(
+    @Body()
+    data: {
+      name: string;
+      code: string;
+      address: string;
+      phone: string;
+      email: string;
+      website?: string;
+    },
+  ) {
     return this.schoolsService.create(data);
   }
 

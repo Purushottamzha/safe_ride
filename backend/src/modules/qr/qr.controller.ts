@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { QRService } from './qr.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -22,10 +22,16 @@ export class QRController {
   @Post('scan')
   @Roles('DRIVER')
   @ApiOperation({ summary: 'Scan QR code for boarding/exiting' })
-  async scanQR(@Body() data: {
-    studentId: string; tripId: string; scanType: ScanType;
-    latitude?: number; longitude?: number;
-  }) {
+  async scanQR(
+    @Body()
+    data: {
+      studentId: string;
+      tripId: string;
+      scanType: ScanType;
+      latitude?: number;
+      longitude?: number;
+    },
+  ) {
     return this.qrService.scanQR(data);
   }
 }

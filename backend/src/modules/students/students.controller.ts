@@ -16,9 +16,12 @@ export class StudentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN', 'DRIVER')
   @ApiOperation({ summary: 'List students with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
-    @Query('grade') grade?: string, @Query('section') section?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
+    @Query('grade') grade?: string,
+    @Query('section') section?: string,
   ) {
     return this.studentsService.findAll({ page, limit, search, schoolId, grade, section });
   }
@@ -33,11 +36,20 @@ export class StudentsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a student' })
-  async create(@Body() data: {
-    firstName: string; lastName: string; dateOfBirth: string;
-    grade: string; section?: string; address: string;
-    phone?: string; schoolId: string; emergencyNotes?: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      firstName: string;
+      lastName: string;
+      dateOfBirth: string;
+      grade: string;
+      section?: string;
+      address: string;
+      phone?: string;
+      schoolId: string;
+      emergencyNotes?: string;
+    },
+  ) {
     return this.studentsService.create(data);
   }
 

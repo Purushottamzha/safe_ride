@@ -8,7 +8,6 @@ describe('SafeRide API (e2e)', () => {
   let accessToken: string;
   let refreshTokenValue: string;
   let schoolId: string;
-  let studentId: string;
   let driverId: string;
   let busId: string;
   let routeId: string;
@@ -99,9 +98,7 @@ describe('SafeRide API (e2e)', () => {
     });
 
     it('GET /api/v1/auth/profile without token should return 401', () => {
-      return request(app.getHttpServer())
-        .get('/api/v1/auth/profile')
-        .expect(401);
+      return request(app.getHttpServer()).get('/api/v1/auth/profile').expect(401);
     });
 
     it('POST /api/v1/auth/refresh should return new tokens', () => {
@@ -164,7 +161,6 @@ describe('SafeRide API (e2e)', () => {
         .expect(201)
         .expect((res) => {
           expect(res.body.success).toBe(true);
-          studentId = res.body.data.id;
         });
     });
 

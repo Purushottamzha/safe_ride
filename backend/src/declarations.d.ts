@@ -21,7 +21,7 @@ declare module '@nestjs/passport' {
 }
 
 declare module '@nestjs/throttler' {
-  import { CanActivate, Type } from '@nestjs/common';
+  import { CanActivate } from '@nestjs/common';
   import { DynamicModule } from '@nestjs/common';
   export class ThrottlerModule {
     static forRootAsync(options: any): DynamicModule;

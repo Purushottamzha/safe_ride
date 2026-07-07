@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma, TripType, AttendanceStatus } from '@prisma/client';
 
@@ -7,10 +7,18 @@ export class AttendanceService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(params: {
-    page?: number; limit?: number; schoolId?: string; studentId?: string;
-    tripId?: string; date?: string; fromDate?: string; toDate?: string;
-    startDate?: string; endDate?: string;
-    type?: TripType; status?: AttendanceStatus;
+    page?: number;
+    limit?: number;
+    schoolId?: string;
+    studentId?: string;
+    tripId?: string;
+    date?: string;
+    fromDate?: string;
+    toDate?: string;
+    startDate?: string;
+    endDate?: string;
+    type?: TripType;
+    status?: AttendanceStatus;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
@@ -48,8 +56,13 @@ export class AttendanceService {
         include: {
           student: {
             select: {
-              id: true, firstName: true, lastName: true, studentId: true,
-              grade: true, section: true, profilePicture: true,
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentId: true,
+              grade: true,
+              section: true,
+              profilePicture: true,
             },
           },
           trip: {
@@ -80,14 +93,23 @@ export class AttendanceService {
       include: {
         student: {
           select: {
-            id: true, firstName: true, lastName: true, studentId: true,
-            grade: true, section: true, profilePicture: true,
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+            profilePicture: true,
           },
         },
         trip: {
           select: {
-            id: true, type: true, status: true, scheduledAt: true,
-            startedAt: true, completedAt: true,
+            id: true,
+            type: true,
+            status: true,
+            scheduledAt: true,
+            startedAt: true,
+            completedAt: true,
           },
         },
         school: { select: { id: true, name: true } },
@@ -99,9 +121,100 @@ export class AttendanceService {
 
   async findByStudent(
     studentId: string,
-    params: { page?: number; limit?: number; fromDate?: string; toDate?: string; startDate?: string; endDate?: string },
+    params: {
+      page?: number;
+      limit?: number;
+      fromDate?: string;
+      toDate?: string;
+      startDate?: string;
+      endDate?: string;
+    },
   ) {
     return this.findAll({ ...params, studentId });
+  }
+
+  async getTodayStatus(studentId: string, user: { id: string; role: string; schoolId?: string }) {
+    const student = await this.prisma.student.findFirst({
+      where: { id: studentId, deletedAt: null },
+      select: { id: true, schoolId: true },
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
+    if (user.role === 'PARENT') {
+      const parentLink = await this.prisma.studentParent.findFirst({
+        where: { studentId, parent: { userId: user.id } },
+      });
+      if (!parentLink) throw new ForbiddenException('Student not linked to your account');
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const attendance = await this.prisma.attendance.findFirst({
+      where: {
+        studentId,
+        date: { gte: today, lt: tomorrow },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        trip: {
+          select: { id: true, type: true, status: true, scheduledAt: true, startedAt: true, completedAt: true },
+        },
+      },
+    });
+
+    let status: string;
+    let message: string;
+
+    if (attendance) {
+      const attStatus = attendance.status;
+      if (attStatus === 'PRESENT') {
+        if (attendance.exitTime) {
+          status = 'present';
+          message = 'Completed for today';
+        } else if (attendance.boardTime) {
+          status = 'present';
+          message = attendance.trip?.status === 'ACTIVE' ? 'On the way to school' : 'Boarded the bus';
+        } else {
+          status = 'present';
+          message = 'Marked present';
+        }
+      } else if (attStatus === 'LATE') {
+        status = 'late';
+        message = `Arrived ${attendance.lateMinutes} min late`;
+      } else if (attStatus === 'ABSENT') {
+        status = 'absent';
+        message = 'Absent today';
+      } else if (attStatus === 'EXCUSED') {
+        status = 'absent';
+        message = 'Excused absence';
+      } else {
+        status = 'unknown';
+        message = 'Status pending';
+      }
+    } else {
+      status = 'unknown';
+      message = 'Not yet marked';
+    }
+
+    const mapTripStatus = (s: string | null | undefined) => {
+      if (!s) return null;
+      const map: Record<string, string> = { SCHEDULED: 'PENDING', ACTIVE: 'IN_TRANSIT', COMPLETED: 'COMPLETED', CANCELLED: 'CANCELLED' };
+      return map[s] || s;
+    };
+
+    return {
+      studentId,
+      date: today.toISOString(),
+      status,
+      currentTripStatus: mapTripStatus(attendance?.trip?.status),
+      currentDirection: attendance?.trip?.type === 'MORNING' ? 'TO_SCHOOL' : attendance?.trip?.type === 'AFTERNOON' ? 'FROM_SCHOOL' : null,
+      lastScanTime: attendance?.boardTime?.toISOString() || null,
+      lastScanLocation: null,
+      message,
+    };
   }
 
   async getTodayAttendance(schoolId: string, type?: TripType) {
@@ -120,7 +233,14 @@ export class AttendanceService {
       where,
       include: {
         student: {
-          select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
         },
       },
     });
@@ -158,14 +278,24 @@ export class AttendanceService {
       },
       include: {
         student: {
-          select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
         },
       },
       orderBy: [{ date: 'asc' }, { student: { firstName: 'asc' } }],
     });
 
     const daysInMonth = endDate.getDate();
-    const dailyBreakdown: Record<string, { present: number; absent: number; late: number; excused: number; total: number }> = {};
+    const dailyBreakdown: Record<
+      string,
+      { present: number; absent: number; late: number; excused: number; total: number }
+    > = {};
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -176,7 +306,9 @@ export class AttendanceService {
       const dateStr = record.date.toISOString().split('T')[0];
       if (dailyBreakdown[dateStr]) {
         dailyBreakdown[dateStr].total++;
-        dailyBreakdown[dateStr][record.status.toLowerCase() as 'present' | 'absent' | 'late' | 'excused']++;
+        dailyBreakdown[dateStr][
+          record.status.toLowerCase() as 'present' | 'absent' | 'late' | 'excused'
+        ]++;
       }
     }
 
@@ -219,9 +351,16 @@ export class AttendanceService {
   }
 
   async create(data: {
-    studentId: string; tripId?: string; schoolId: string; date: string;
-    type: TripType; boardTime?: string; exitTime?: string;
-    status?: AttendanceStatus; isLate?: boolean; lateMinutes?: number;
+    studentId: string;
+    tripId?: string;
+    schoolId: string;
+    date: string;
+    type: TripType;
+    boardTime?: string;
+    exitTime?: string;
+    status?: AttendanceStatus;
+    isLate?: boolean;
+    lateMinutes?: number;
   }) {
     const createData: Record<string, unknown> = {
       ...data,
@@ -239,10 +378,17 @@ export class AttendanceService {
     });
   }
 
-  async update(id: string, data: Partial<{
-    boardTime: string; exitTime: string; status: AttendanceStatus;
-    isLate: boolean; lateMinutes: number; notes: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      boardTime: string;
+      exitTime: string;
+      status: AttendanceStatus;
+      isLate: boolean;
+      lateMinutes: number;
+      notes: string;
+    }>,
+  ) {
     const record = await this.prisma.attendance.findUnique({ where: { id } });
     if (!record) throw new NotFoundException('Attendance record not found');
 

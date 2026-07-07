@@ -25,7 +25,16 @@ export class ReportsService {
         date: { gte: startOfDay, lte: endOfDay },
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true } },
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
+        },
       },
     });
 
@@ -68,7 +77,16 @@ export class ReportsService {
         date: { gte: startDate, lte: endDate },
       },
       include: {
-        student: { select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true } },
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
+        },
       },
     });
 
@@ -112,9 +130,8 @@ export class ReportsService {
         absentCount: attendance.filter((a) => a.status === 'ABSENT').length,
         lateCount: attendance.filter((a) => a.isLate).length,
         excusedCount: attendance.filter((a) => a.status === 'EXCUSED').length,
-        averageAttendance: totalStudents > 0
-          ? Math.round((daysPresent.size / totalStudents) * 100)
-          : 0,
+        averageAttendance:
+          totalStudents > 0 ? Math.round((daysPresent.size / totalStudents) * 100) : 0,
       },
       studentSummaries: studentAttendanceSummary,
     };
@@ -159,7 +176,8 @@ export class ReportsService {
       const cancelledTrips = trips.filter((t) => t.status === 'CANCELLED');
       const activeTrips = trips.filter((t) => t.status === 'ACTIVE');
       const totalStudentsCount = driver.driverAssignments.reduce(
-        (sum, da) => sum + da.assignment.studentAssignments.length, 0,
+        (sum, da) => sum + da.assignment.studentAssignments.length,
+        0,
       );
 
       const onTimeTrips = completedTrips.filter((t) => {
@@ -180,19 +198,18 @@ export class ReportsService {
           completed: completedTrips.length,
           cancelled: cancelledTrips.length,
           active: activeTrips.length,
-          completionRate: trips.length > 0 ? Math.round((completedTrips.length / trips.length) * 100) : 0,
-          onTimeRate: completedTrips.length > 0 ? Math.round((onTimeTrips.length / completedTrips.length) * 100) : 0,
+          completionRate:
+            trips.length > 0 ? Math.round((completedTrips.length / trips.length) * 100) : 0,
+          onTimeRate:
+            completedTrips.length > 0
+              ? Math.round((onTimeTrips.length / completedTrips.length) * 100)
+              : 0,
         },
       };
     });
   }
 
-  async getBusUtilization(
-    schoolId: string,
-    fromDate: string,
-    toDate: string,
-    busId?: string,
-  ) {
+  async getBusUtilization(schoolId: string, fromDate: string, toDate: string, busId?: string) {
     if (!fromDate || !toDate) throw new BadRequestException('fromDate and toDate are required');
 
     const busWhere: Record<string, unknown> = { schoolId, deletedAt: null };
@@ -227,7 +244,8 @@ export class ReportsService {
         tripStats: {
           total: totalTrips,
           completed: completedTrips,
-          utilizationRate: maxPossibleTrips > 0 ? Math.round((completedTrips / maxPossibleTrips) * 100) : 0,
+          utilizationRate:
+            maxPossibleTrips > 0 ? Math.round((completedTrips / maxPossibleTrips) * 100) : 0,
         },
         totalStudentsTransported: bus.trips.reduce((sum, t) => sum + t._count.attendance, 0),
         totalEvents: bus.trips.reduce((sum, t) => sum + t._count.tripEvents, 0),
@@ -249,23 +267,33 @@ export class ReportsService {
       },
       include: {
         student: {
-          select: { id: true, firstName: true, lastName: true, studentId: true, grade: true, section: true },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+            grade: true,
+            section: true,
+          },
         },
         trip: { select: { id: true, type: true, scheduledAt: true } },
       },
       orderBy: [{ studentId: 'asc' }, { date: 'desc' }],
     });
 
-    const lateByStudent = new Map<string, {
-      studentId: string;
-      studentName: string;
-      studentIdCode: string;
-      grade: string;
-      section: string;
-      lateCount: number;
-      totalLateMinutes: number;
-      records: typeof lateAttendance;
-    }>();
+    const lateByStudent = new Map<
+      string,
+      {
+        studentId: string;
+        studentName: string;
+        studentIdCode: string;
+        grade: string;
+        section: string;
+        lateCount: number;
+        totalLateMinutes: number;
+        records: typeof lateAttendance;
+      }
+    >();
 
     for (const record of lateAttendance) {
       const key = record.studentId;
@@ -287,17 +315,22 @@ export class ReportsService {
       entry.records.push(record);
     }
 
-    const lateStudents = Array.from(lateByStudent.values())
-      .sort((a, b) => b.lateCount - a.lateCount);
+    const lateStudents = Array.from(lateByStudent.values()).sort(
+      (a, b) => b.lateCount - a.lateCount,
+    );
 
     return {
       period: { fromDate, toDate },
       schoolId,
       totalLateRecords: lateAttendance.length,
       uniqueLateStudents: lateStudents.length,
-      averageLateMinutes: lateAttendance.length > 0
-        ? Math.round(lateAttendance.reduce((sum, r) => sum + (r.lateMinutes || 0), 0) / lateAttendance.length)
-        : 0,
+      averageLateMinutes:
+        lateAttendance.length > 0
+          ? Math.round(
+              lateAttendance.reduce((sum, r) => sum + (r.lateMinutes || 0), 0) /
+                lateAttendance.length,
+            )
+          : 0,
       lateStudents,
     };
   }
@@ -318,7 +351,10 @@ export class ReportsService {
       },
     });
 
-    const gradeSectionMap = new Map<string, { present: number; absent: number; late: number; excused: number; total: number }>();
+    const gradeSectionMap = new Map<
+      string,
+      { present: number; absent: number; late: number; excused: number; total: number }
+    >();
 
     for (const record of attendance) {
       const key = `${record.student.grade}-${record.student.section || 'N/A'}`;
@@ -333,7 +369,10 @@ export class ReportsService {
       else if (record.status === 'EXCUSED') entry.excused++;
     }
 
-    const dateBreakdown: Record<string, { present: number; absent: number; late: number; excused: number; total: number }> = {};
+    const dateBreakdown: Record<
+      string,
+      { present: number; absent: number; late: number; excused: number; total: number }
+    > = {};
     for (const record of attendance) {
       const dateStr = record.date.toISOString().split('T')[0];
       if (!dateBreakdown[dateStr]) {
@@ -352,7 +391,8 @@ export class ReportsService {
         grade,
         section: section === 'N/A' ? null : section,
         ...value,
-        attendanceRate: value.total > 0 ? Math.round(((value.present + value.late) / value.total) * 100) : 0,
+        attendanceRate:
+          value.total > 0 ? Math.round(((value.present + value.late) / value.total) * 100) : 0,
       };
     });
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -8,8 +8,12 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(params: {
-    page?: number; limit?: number; search?: string;
-    schoolId?: string; grade?: string; section?: string;
+    page?: number;
+    limit?: number;
+    search?: string;
+    schoolId?: string;
+    grade?: string;
+    section?: string;
     isActive?: boolean;
   }) {
     const page = params.page || 1;
@@ -31,12 +35,20 @@ export class StudentsService {
 
     const [data, total] = await Promise.all([
       this.prisma.student.findMany({
-        where, skip, take: limit,
+        where,
+        skip,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
           school: { select: { id: true, name: true } },
           parentStudents: {
-            include: { parent: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } } },
+            include: {
+              parent: {
+                include: {
+                  user: { select: { id: true, firstName: true, lastName: true, email: true } },
+                },
+              },
+            },
           },
         },
       }),
@@ -45,7 +57,14 @@ export class StudentsService {
 
     return {
       data,
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit), hasNextPage: page * limit < total, hasPreviousPage: page > 1 },
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
@@ -55,7 +74,15 @@ export class StudentsService {
       include: {
         school: { select: { id: true, name: true } },
         parentStudents: {
-          include: { parent: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } } } },
+          include: {
+            parent: {
+              include: {
+                user: {
+                  select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+                },
+              },
+            },
+          },
         },
         studentAssignments: { include: { assignment: { include: { route: true } } } },
       },
@@ -65,9 +92,15 @@ export class StudentsService {
   }
 
   async create(data: {
-    firstName: string; lastName: string; dateOfBirth: string;
-    grade: string; section?: string; address: string;
-    phone?: string; schoolId: string; emergencyNotes?: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    grade: string;
+    section?: string;
+    address: string;
+    phone?: string;
+    schoolId: string;
+    emergencyNotes?: string;
   }) {
     const studentId = `STU-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
@@ -85,12 +118,21 @@ export class StudentsService {
     });
   }
 
-  async update(id: string, data: Partial<{
-    firstName: string; lastName: string; dateOfBirth: string;
-    grade: string; section: string; address: string;
-    phone: string; isActive: boolean; emergencyNotes: string;
-    profilePicture: string;
-  }>) {
+  async update(
+    id: string,
+    data: Partial<{
+      firstName: string;
+      lastName: string;
+      dateOfBirth: string;
+      grade: string;
+      section: string;
+      address: string;
+      phone: string;
+      isActive: boolean;
+      emergencyNotes: string;
+      profilePicture: string;
+    }>,
+  ) {
     const student = await this.prisma.student.findFirst({ where: { id, deletedAt: null } });
     if (!student) throw new NotFoundException('Student not found');
 
@@ -117,6 +159,9 @@ export class StudentsService {
   async softDelete(id: string): Promise<void> {
     const student = await this.prisma.student.findFirst({ where: { id, deletedAt: null } });
     if (!student) throw new NotFoundException('Student not found');
-    await this.prisma.student.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+    await this.prisma.student.update({
+      where: { id },
+      data: { deletedAt: new Date(), isActive: false },
+    });
   }
 }

@@ -37,7 +37,12 @@ const processQueue = (error: unknown, token: string | null = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -66,7 +71,8 @@ api.interceptors.response.use(
 
       try {
         const response = await axios.post('/api/v1/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        const refreshData = response.data.data || response.data;
+        const { accessToken, refreshToken: newRefreshToken } = refreshData;
         useAuthStore.getState().setTokens(accessToken, newRefreshToken);
         processQueue(null, accessToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;

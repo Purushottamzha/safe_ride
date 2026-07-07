@@ -16,12 +16,17 @@ export class RoutesController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List routes with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
     @Query('isActive') isActive?: string,
   ) {
     return this.routesService.findAll({
-      page, limit, search, schoolId,
+      page,
+      limit,
+      search,
+      schoolId,
       isActive: isActive !== undefined ? isActive === 'true' : undefined,
     });
   }
@@ -36,10 +41,18 @@ export class RoutesController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a route' })
-  async create(@Body() data: {
-    name: string; code: string; direction?: string; distance?: number;
-    duration?: number; isActive?: boolean; schoolId: string;
-  }) {
+  async create(
+    @Body()
+    data: {
+      name: string;
+      code: string;
+      direction?: string;
+      distance?: number;
+      duration?: number;
+      isActive?: boolean;
+      schoolId: string;
+    },
+  ) {
     return this.routesService.create(data);
   }
 
@@ -54,7 +67,8 @@ export class RoutesController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Add stop to route' })
   async addStop(
-    @Param('id') id: string, @Param('stopId') stopId: string,
+    @Param('id') id: string,
+    @Param('stopId') stopId: string,
     @Body() body: { sequence: number; distance?: number; duration?: number },
   ) {
     return this.routesService.addStop(id, stopId, body.sequence, body.distance, body.duration);

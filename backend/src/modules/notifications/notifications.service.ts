@@ -11,8 +11,12 @@ export class NotificationsService {
   ) {}
 
   async findAll(params: {
-    page?: number; limit?: number; userId?: string; schoolId?: string;
-    isRead?: boolean; type?: NotificationType;
+    page?: number;
+    limit?: number;
+    userId?: string;
+    schoolId?: string;
+    isRead?: boolean;
+    type?: NotificationType;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
@@ -66,8 +70,13 @@ export class NotificationsService {
   }
 
   async create(data: {
-    type: NotificationType; channel: NotificationChannel; title: string;
-    body: string; data?: Record<string, unknown>; userId?: string; schoolId?: string;
+    type: NotificationType;
+    channel: NotificationChannel;
+    title: string;
+    body: string;
+    data?: Record<string, unknown>;
+    userId?: string;
+    schoolId?: string;
   }) {
     const notification = await this.prisma.notification.create({
       data: {
@@ -103,7 +112,7 @@ export class NotificationsService {
     const notification = await this.prisma.notification.findUnique({ where: { id } });
     if (!notification) throw new NotFoundException('Notification not found');
     if (userId && notification.userId && notification.userId !== userId) {
-      throw new ForbiddenException('You cannot mark another user\'s notification as read');
+      throw new ForbiddenException("You cannot mark another user's notification as read");
     }
 
     return this.prisma.notification.update({

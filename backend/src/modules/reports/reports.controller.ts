@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -17,10 +17,7 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get daily attendance report' })
   @ApiQuery({ name: 'schoolId', required: true })
   @ApiQuery({ name: 'date', required: true, example: '2026-01-15' })
-  async getDailyAttendance(
-    @Query('schoolId') schoolId: string,
-    @Query('date') date: string,
-  ) {
+  async getDailyAttendance(@Query('schoolId') schoolId: string, @Query('date') date: string) {
     return this.reportsService.getDailyAttendance(schoolId, date);
   }
 

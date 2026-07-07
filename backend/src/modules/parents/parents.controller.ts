@@ -4,6 +4,7 @@ import { ParentsService } from './parents.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Parents')
 @ApiBearerAuth('JWT-auth')
@@ -12,12 +13,21 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class ParentsController {
   constructor(private readonly parentsService: ParentsService) {}
 
+  @Get('me/children')
+  @Roles('PARENT')
+  @ApiOperation({ summary: 'Get current parent\'s children with today\'s status' })
+  async getMyChildren(@CurrentUser() user: { id: string }) {
+    return this.parentsService.getMyChildren(user.id);
+  }
+
   @Get()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'List parents with pagination' })
   async findAll(
-    @Query('page') page?: number, @Query('limit') limit?: number,
-    @Query('search') search?: string, @Query('schoolId') schoolId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('schoolId') schoolId?: string,
   ) {
     return this.parentsService.findAll({ page, limit, search, schoolId });
   }
@@ -47,7 +57,8 @@ export class ParentsController {
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Link student to parent' })
   async linkStudent(
-    @Param('id') id: string, @Param('studentId') studentId: string,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
     @Body() body: { relation: string; isPrimary?: boolean },
   ) {
     return this.parentsService.linkStudent(id, studentId, body.relation, body.isPrimary);
