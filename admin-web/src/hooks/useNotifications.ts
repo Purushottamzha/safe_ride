@@ -32,7 +32,7 @@ export function useNotifications() {
   return {
     unreadCount: unreadCountData?.count ?? 0,
     notifications: notificationsData?.data ?? [],
-    totalNotifications: notificationsData?.total ?? 0,
+    totalNotifications: notificationsData?.meta?.total ?? 0,
     isLoading,
     markRead: markReadMutation.mutate,
     markAllRead: markAllReadMutation.mutate,

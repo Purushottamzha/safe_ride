@@ -17,6 +17,7 @@ export interface Trip {
   routeId: string | null;
   notes: string | null;
   bus?: { plateNumber: string; busNumber: string };
+  route?: { name: string };
   _count?: { tripEvents: number; attendance: number };
 }
 

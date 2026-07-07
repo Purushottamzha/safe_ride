@@ -1,392 +1,213 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+  ActivityIndicator, Animated, Vibration, Dimensions, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { colors, spacing, typography } from '../theme';
-import { ScanQRResult } from '../types';
 import * as studentsService from '../services/students';
+import { useToast } from '../components/Toast';
+
+const { width } = Dimensions.get('window');
 
 type RootStackParamList = {
-  Trips: undefined;
-  TripDetail: { tripId: string };
-  StudentList: { tripId: string };
-  QRScanner: { tripId: string };
-  IncidentReport: { tripId?: string };
+  ActiveTrip: { tripId: string };
+  QRScanner: { tripId: string; scanType?: 'BOARD_IN' | 'EXIT_OUT' };
 };
 
-type QRScannerRouteProp = RouteProp<RootStackParamList, 'QRScanner'>;
+type QRRouteProp = RouteProp<RootStackParamList, 'QRScanner'>;
 
-const QRScannerScreen: React.FC = () => {
-  const route = useRoute<QRScannerRouteProp>();
+interface ScanResult {
+  student: { firstName: string; lastName: string; grade: string; studentId: string };
+  timestamp: number;
+}
+
+export default function QRScannerScreen() {
+  const route = useRoute<QRRouteProp>();
   const navigation = useNavigation();
   const { tripId } = route.params;
 
-  const [qrToken, setQrToken] = useState('');
   const [scanType, setScanType] = useState<'BOARD_IN' | 'EXIT_OUT'>('BOARD_IN');
   const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<ScanQRResult | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [qrToken, setQrToken] = useState('');
+  const [error, setError] = useState('');
+  const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
+  const { showToast } = useToast();
 
-  const handleScan = useCallback(async () => {
-    const token = qrToken.trim();
-    if (!token) {
-      Alert.alert('Error', 'Please enter a QR token or scan a QR code.');
-      return;
-    }
+  const successAnim = useRef(new Animated.Value(0)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+  const lastScanRef = useRef('');
+
+  const processScan = useCallback(async (token: string) => {
+    const trimmed = token.trim();
+    if (!trimmed || trimmed === lastScanRef.current) return;
+    lastScanRef.current = trimmed;
 
     setScanning(true);
+    setError('');
     try {
-      const data = await studentsService.scanQR(token, tripId, scanType);
-      setResult(data);
+      const data = await studentsService.scanQR(trimmed, tripId, scanType);
+      setRecentScans(prev => [{ student: data.student, timestamp: Date.now() }, ...prev]);
+      showToast(`${data.student.firstName} ${data.student.lastName} scanned`, 'success');
+      Vibration.vibrate(200);
+      Animated.sequence([
+        Animated.timing(successAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.delay(1500),
+        Animated.timing(successAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start();
     } catch (e: any) {
-      Alert.alert(
-        'Scan Error',
-        e?.response?.data?.message ||
-          e?.message ||
-          'Invalid or expired QR code.',
-      );
+      const msg = e?.response?.data?.message || e?.message || 'Invalid QR';
+      setError(msg);
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: 10, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -10, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 10, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+      ]).start();
+      setTimeout(() => setError(''), 2000);
     } finally {
       setScanning(false);
+      setTimeout(() => { lastScanRef.current = ''; }, 1000);
     }
-  }, [qrToken, tripId, scanType]);
+  }, [tripId, scanType, successAnim, shakeAnim]);
 
-  const handleConfirm = async () => {
-    if (!result) return;
-
-    setSubmitting(true);
-    try {
-      await studentsService.scanQR(
-        qrToken.trim(),
-        tripId,
-        scanType,
-      );
-      Alert.alert('Success', `${scanType === 'BOARD_IN' ? 'Boarding' : 'Exit'} recorded successfully!`, [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
-    } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to record scan');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleManualScan = async () => {
+    if (!qrToken.trim()) { Alert.alert('Error', 'Enter a QR token'); return; }
+    await processScan(qrToken);
+    setQrToken('');
   };
 
   const switchScanType = () => {
-    setScanType((prev) => (prev === 'BOARD_IN' ? 'EXIT_OUT' : 'BOARD_IN'));
-    setResult(null);
+    setScanType(prev => prev === 'BOARD_IN' ? 'EXIT_OUT' : 'BOARD_IN');
+    setError('');
+    setQrToken('');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Text style={styles.heading}>QR Scanner</Text>
-        <Text style={styles.subtitle}>
-          Scan a student's QR code to record attendance
-        </Text>
+        <View style={styles.scanTypeRow}>
+          <TouchableOpacity style={[styles.typeBtn, scanType === 'BOARD_IN' && styles.typeBtnActive]} onPress={() => { setScanType('BOARD_IN'); setError(''); }}>
+            <Text style={[styles.typeBtnText, scanType === 'BOARD_IN' && styles.typeBtnTextActive]}>Board In</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.typeBtn, scanType === 'EXIT_OUT' && styles.typeBtnActive]} onPress={() => { setScanType('EXIT_OUT'); setError(''); }}>
+            <Text style={[styles.typeBtnText, scanType === 'EXIT_OUT' && styles.typeBtnTextActive]}>Drop Off</Text>
+          </TouchableOpacity>
+        </View>
 
-        {!result && (
-          <>
-            <View style={styles.scanTypeToggle}>
-              <TouchableOpacity
-                style={[
-                  styles.scanTypeButton,
-                  scanType === 'BOARD_IN' && styles.scanTypeActive,
-                ]}
-                onPress={() => {
-                  setScanType('BOARD_IN');
-                  setResult(null);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.scanTypeText,
-                    scanType === 'BOARD_IN' && styles.scanTypeTextActive,
-                  ]}
-                >
-                  Board In
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.scanTypeButton,
-                  scanType === 'EXIT_OUT' && styles.scanTypeActive,
-                ]}
-                onPress={() => {
-                  setScanType('EXIT_OUT');
-                  setResult(null);
-                }}
-              >
-                <Text
-                  style={[
-                    styles.scanTypeText,
-                    scanType === 'EXIT_OUT' && styles.scanTypeTextActive,
-                  ]}
-                >
-                  Exit Out
-                </Text>
-              </TouchableOpacity>
-            </View>
+        <View style={styles.scannerArea}>
+          <Text style={styles.scannerIcon}>📷</Text>
+          <Text style={styles.scannerTitle}>Continuous Scan Mode</Text>
+          <Text style={styles.scannerHint}>Point camera at student QR code</Text>
+          {scanning && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />}
+          <Animated.View style={[styles.successOverlay, { opacity: successAnim }]}>
+            <Text style={styles.successCheck}>✓</Text>
+            <Text style={styles.successText}>Scanned!</Text>
+          </Animated.View>
+          {error ? (
+            <Animated.View style={[styles.errorBanner, { transform: [{ translateX: shakeAnim }] }]}>
+              <Text style={styles.errorText}>{error}</Text>
+            </Animated.View>
+          ) : null}
+        </View>
 
-            <Text style={styles.label}>Camera QR Scanner</Text>
-            <View style={styles.cameraPlaceholder}>
-              <Text style={styles.cameraIcon}>📷</Text>
-              <Text style={styles.cameraHint}>
-                Camera view will appear here on device
-              </Text>
-              <Text style={styles.cameraHint}>
-                (Use manual entry below as fallback)
-              </Text>
-            </View>
+        <TouchableOpacity style={styles.manualToggle} onPress={() => setManualMode(!manualMode)}>
+          <Text style={styles.manualToggleText}>
+            {manualMode ? 'Show Scanner' : 'Manual Entry'}
+          </Text>
+        </TouchableOpacity>
 
-            <Text style={styles.label}>Manual QR Token Entry</Text>
+        {manualMode && (
+          <View style={styles.manualSection}>
             <TextInput
               style={styles.input}
-              placeholder="Paste or type QR token"
+              placeholder="Enter QR token"
               placeholderTextColor={colors.textSecondary}
               value={qrToken}
               onChangeText={setQrToken}
               autoCapitalize="none"
               autoCorrect={false}
+              editable={!scanning}
             />
-
-            <TouchableOpacity
-              style={[styles.scanButton, scanning && styles.disabled]}
-              onPress={handleScan}
-              disabled={scanning}
-            >
-              {scanning ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.scanButtonText}>Verify QR Token</Text>
-              )}
-            </TouchableOpacity>
-          </>
-        )}
-
-        {result && (
-          <View style={styles.resultContainer}>
-            <Text style={styles.successIcon}>✅</Text>
-            <Text style={styles.resultHeading}>Student Found</Text>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentName}>
-                {result.student.firstName} {result.student.lastName}
-              </Text>
-              <Text style={styles.studentDetail}>
-                Grade {result.student.grade}
-                {result.student.section ? ` • ${result.student.section}` : ''}
-              </Text>
-              <Text style={styles.studentDetail}>
-                ID: {result.student.studentId}
-              </Text>
-            </View>
-            <View style={styles.scanTypeToggle}>
-              <TouchableOpacity
-                style={[
-                  styles.scanTypeButton,
-                  scanType === 'BOARD_IN' && styles.scanTypeActive,
-                ]}
-                onPress={switchScanType}
-              >
-                <Text
-                  style={[
-                    styles.scanTypeText,
-                    scanType === 'BOARD_IN' && styles.scanTypeTextActive,
-                  ]}
-                >
-                  Board In
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.scanTypeButton,
-                  scanType === 'EXIT_OUT' && styles.scanTypeActive,
-                ]}
-                onPress={switchScanType}
-              >
-                <Text
-                  style={[
-                    styles.scanTypeText,
-                    scanType === 'EXIT_OUT' && styles.scanTypeTextActive,
-                  ]}
-                >
-                  Exit Out
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={[styles.confirmButton, submitting && styles.disabled]}
-              onPress={handleConfirm}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.confirmButtonText}>
-                  Confirm {scanType === 'BOARD_IN' ? 'Boarding' : 'Exit'}
-                </Text>
-              )}
+            <TouchableOpacity style={[styles.manualBtn, scanning && { opacity: 0.7 }]} onPress={handleManualScan} disabled={scanning}>
+              {scanning ? <ActivityIndicator color="#FFF" /> : <Text style={styles.manualBtnText}>Verify</Text>}
             </TouchableOpacity>
           </View>
         )}
+
+        <View style={styles.recentHeader}>
+          <Text style={styles.recentTitle}>Recent Scans ({recentScans.length})</Text>
+          <TouchableOpacity onPress={switchScanType}>
+            <Text style={styles.switchText}>Switch to {scanType === 'BOARD_IN' ? 'Drop Off' : 'Board In'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={recentScans}
+          keyExtractor={(_, i) => String(i)}
+          showsVerticalScrollIndicator={false}
+          style={styles.recentList}
+          renderItem={({ item, index }) => (
+            <View style={styles.scanRow}>
+              <View style={[styles.scanBadge, { backgroundColor: scanType === 'BOARD_IN' ? colors.success : colors.info }]}>
+                <Text style={styles.scanBadgeText}>{recentScans.length - index}</Text>
+              </View>
+              <View style={styles.scanInfo}>
+                <Text style={styles.scanName}>{item.student.firstName} {item.student.lastName}</Text>
+                <Text style={styles.scanDetail}>Grade {item.student.grade} · ID: {item.student.studentId.slice(0, 8)}</Text>
+              </View>
+              <Text style={styles.scanTime}>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</Text>
+            </View>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyScans}>No scans yet. Scan a student QR code to begin.</Text>
+          }
+        />
       </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
+  safeArea: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, padding: spacing.md },
+  scanTypeRow: { flexDirection: 'row', backgroundColor: '#1E293B', borderRadius: 12, padding: 4, marginBottom: spacing.md },
+  typeBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  typeBtnActive: { backgroundColor: colors.primary },
+  typeBtnText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  typeBtnTextActive: { color: '#FFFFFF' },
+  scannerArea: {
+    backgroundColor: '#0F172A', borderRadius: 16, padding: spacing.lg,
+    alignItems: 'center', minHeight: 200, justifyContent: 'center',
+    borderWidth: 2, borderColor: colors.primary + '40', borderStyle: 'dashed', marginBottom: spacing.sm,
+    position: 'relative', overflow: 'hidden',
   },
-  container: {
-    flex: 1,
-    padding: spacing.md,
-  },
-  heading: {
-    ...typography.h1,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.caption,
-    marginBottom: spacing.lg,
-  },
-  label: {
-    ...typography.label,
-    marginBottom: spacing.xs,
-    marginTop: spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  scanTypeToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.border,
-    borderRadius: 10,
-    padding: 3,
-    marginBottom: spacing.md,
-  },
-  scanTypeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  scanTypeActive: {
-    backgroundColor: colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  scanTypeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  scanTypeTextActive: {
-    color: colors.primary,
-  },
-  cameraPlaceholder: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    padding: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 180,
-  },
-  cameraIcon: {
-    fontSize: 48,
-    marginBottom: spacing.sm,
-  },
-  cameraHint: {
-    ...typography.caption,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  scanButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  scanButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  disabled: {
-    opacity: 0.7,
-  },
-  resultContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  successIcon: {
-    fontSize: 64,
-    marginBottom: spacing.md,
-  },
-  resultHeading: {
-    ...typography.h2,
-    marginBottom: spacing.lg,
-  },
-  studentInfo: {
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: spacing.lg,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  studentName: {
-    ...typography.h3,
-    marginBottom: spacing.xs,
-  },
-  studentDetail: {
-    ...typography.caption,
-    marginBottom: 2,
-  },
-  confirmButton: {
-    backgroundColor: colors.secondary,
-    paddingVertical: 16,
-    paddingHorizontal: 48,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: spacing.md,
-  },
-  confirmButtonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
+  scannerIcon: { fontSize: 56, marginBottom: spacing.sm },
+  scannerTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '700', marginBottom: spacing.xs },
+  scannerHint: { color: colors.textSecondary, fontSize: 14 },
+  successOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.success + 'CC', justifyContent: 'center', alignItems: 'center', borderRadius: 16 },
+  successCheck: { fontSize: 64, color: '#FFFFFF', fontWeight: '800' },
+  successText: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', marginTop: spacing.xs },
+  errorBanner: { backgroundColor: colors.error + '30', borderRadius: 8, padding: spacing.sm, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.error + '50' },
+  errorText: { color: colors.error, fontSize: 14, textAlign: 'center', fontWeight: '600' },
+  manualToggle: { alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm },
+  manualToggleText: { color: colors.info, fontSize: 14, fontWeight: '600' },
+  manualSection: { marginBottom: spacing.md },
+  input: { backgroundColor: '#1E293B', borderRadius: 10, paddingHorizontal: spacing.md, paddingVertical: 14, fontSize: 16, color: '#FFFFFF', marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  manualBtn: { backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
+  manualBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  recentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm },
+  recentTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  switchText: { color: colors.info, fontSize: 12, fontWeight: '600' },
+  recentList: { flex: 1 },
+  scanRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1E293B', borderRadius: 10, padding: spacing.sm, marginBottom: 6 },
+  scanBadge: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm },
+  scanBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  scanInfo: { flex: 1 },
+  scanName: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  scanDetail: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  scanTime: { color: colors.textSecondary, fontSize: 11, fontFamily: 'monospace' },
+  emptyScans: { color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.xl, fontSize: 14 },
 });
-
-export default QRScannerScreen;

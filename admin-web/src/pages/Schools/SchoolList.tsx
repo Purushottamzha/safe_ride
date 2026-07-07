@@ -27,7 +27,7 @@ export default function SchoolList() {
   });
 
   const schools = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<School>[] = [
     { id: 'name', label: 'School Name', render: (row) => row.name, sortable: true },

@@ -23,3 +23,22 @@ export const getUnreadCount = async (): Promise<UnreadCount> => {
   const { data } = await api.get<UnreadCount>('/notifications/unread-count');
   return data;
 };
+
+export interface NotificationPreference {
+  id: string;
+  userId: string;
+  eventType: string;
+  channel: string;
+  enabled: boolean;
+}
+
+export const notificationPreferenceService = {
+  get: async (): Promise<NotificationPreference[]> => {
+    const { data } = await api.get<NotificationPreference[]>('/notification-preferences');
+    return data;
+  },
+  update: async (preferences: { eventType: string; channel: string; enabled: boolean }[]): Promise<NotificationPreference[]> => {
+    const { data } = await api.put<NotificationPreference[]>('/notification-preferences', { preferences });
+    return data;
+  },
+};

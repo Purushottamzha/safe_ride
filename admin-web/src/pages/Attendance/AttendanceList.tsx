@@ -26,7 +26,7 @@ export default function AttendanceList() {
   });
 
   const records = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<Attendance>[] = [
     {
@@ -39,11 +39,11 @@ export default function AttendanceList() {
       label: 'Grade',
       render: (row) => (row.student ? `Grade ${row.student.grade}` : '-'),
     },
-    { id: 'date', label: 'Date', render: (row) => row.date, sortable: true },
+    { id: 'date', label: 'Date', render: (row) => new Date(row.date).toLocaleDateString(), sortable: true },
     {
       id: 'trip',
       label: 'Trip',
-      render: (row) => (row.trip ? `${row.trip.type} - ${row.trip.date}` : '-'),
+      render: (row) => (row.trip ? `${row.trip.type} - ${new Date(row.trip.scheduledAt).toLocaleDateString()}` : '-'),
     },
     {
       id: 'status',
@@ -51,7 +51,7 @@ export default function AttendanceList() {
       render: (row) => <StatusBadge status={row.status} />,
       sortable: true,
     },
-    { id: 'scanTime', label: 'Scan Time', render: (row) => row.scanTime ?? '-' },
+    { id: 'boardTime', label: 'Board Time', render: (row) => row.boardTime ? new Date(row.boardTime).toLocaleTimeString() : '-' },
   ];
 
   return (

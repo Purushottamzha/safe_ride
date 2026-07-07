@@ -6,6 +6,32 @@ export interface DriverFilters {
   limit?: number;
   search?: string;
   schoolId?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  isAvailable?: boolean;
+}
+
+export interface CreateDriverPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  isAvailable?: boolean;
+  emergencyContact?: string;
+  medicalNotes?: string;
+  schoolId: string;
+}
+
+export interface UpdateDriverPayload {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  licenseNumber?: string;
+  licenseExpiry?: string;
+  isAvailable?: boolean;
+  emergencyContact?: string;
+  medicalNotes?: string;
 }
 
 export const driverService = {
@@ -19,12 +45,12 @@ export const driverService = {
     return response.data;
   },
 
-  create: async (data: Omit<Driver, 'id' | 'createdAt' | 'updatedAt' | 'school' | 'isActive'> & { isActive?: boolean }): Promise<Driver> => {
+  create: async (data: CreateDriverPayload): Promise<Driver> => {
     const response = await api.post<Driver>('/drivers', data);
     return response.data;
   },
 
-  update: async (id: string, data: Partial<Omit<Driver, 'id' | 'createdAt' | 'updatedAt' | 'school'>>): Promise<Driver> => {
+  update: async (id: string, data: UpdateDriverPayload): Promise<Driver> => {
     const response = await api.put<Driver>(`/drivers/${id}`, data);
     return response.data;
   },

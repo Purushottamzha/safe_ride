@@ -26,14 +26,14 @@ export default function AssignmentList() {
   });
 
   const assignments = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<Assignment>[] = [
-    { id: 'student', label: 'Student', render: (row) => row.student ? `${row.student.firstName} ${row.student.lastName}` : '-' },
-    { id: 'bus', label: 'Bus', render: (row) => row.bus?.plateNumber ?? '-' },
+    { id: 'student', label: 'Student', render: (row) => row.studentAssignments?.[0]?.student ? `${row.studentAssignments[0].student.firstName} ${row.studentAssignments[0].student.lastName}` : '-' },
+    { id: 'bus', label: 'Bus', render: (row) => row.busAssignments?.[0]?.bus?.plateNumber ?? '-' },
     { id: 'route', label: 'Route', render: (row) => row.route?.name ?? '-' },
-    { id: 'stop', label: 'Stop', render: (row) => row.stop?.name ?? '-' },
-    { id: 'type', label: 'Type', render: (row) => <StatusBadge status={row.type} /> },
+    { id: 'stop', label: 'Stop', render: (row) => row.studentAssignments?.[0]?.stop?.name ?? '-' },
+    { id: 'students', label: 'Students', render: (row) => String(row._count?.studentAssignments ?? row.studentAssignments?.length ?? 0) },
     { id: 'status', label: 'Status', render: (row) => <StatusBadge status={row.isActive ? 'active' : 'inactive'} /> },
     {
       id: 'actions', label: 'Actions', width: 100,

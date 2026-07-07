@@ -22,11 +22,10 @@ import { useAuthStore } from '../../store/authStore';
 const studentSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  studentId: z.string().min(1, 'Student ID is required'),
   grade: z.string().min(1, 'Grade is required'),
   section: z.string().min(1, 'Section is required'),
-  parentName: z.string().min(1, 'Parent name is required'),
-  parentPhone: z.string().min(1, 'Parent phone is required'),
-  parentEmail: z.string().email('Invalid email').or(z.literal('')),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
   address: z.string().min(1, 'Address is required'),
   schoolId: z.string().min(1, 'School is required'),
 });
@@ -37,7 +36,7 @@ export default function StudentCreate() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const { data: schoolsData } = useQuery({
     queryKey: ['schools'],
@@ -62,11 +61,10 @@ export default function StudentCreate() {
     defaultValues: {
       firstName: '',
       lastName: '',
+      studentId: '',
       grade: '',
       section: '',
-      parentName: '',
-      parentPhone: '',
-      parentEmail: '',
+      dateOfBirth: '',
       address: '',
       schoolId: isSuperAdmin ? '' : (user?.schoolId ?? ''),
     },
@@ -162,28 +160,21 @@ export default function StudentCreate() {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Parent Name"
-                  error={!!errors.parentName}
-                  helperText={errors.parentName?.message}
-                  {...register('parentName')}
+                  label="Student ID"
+                  error={!!errors.studentId}
+                  helperText={errors.studentId?.message}
+                  {...register('studentId')}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Parent Phone"
-                  error={!!errors.parentPhone}
-                  helperText={errors.parentPhone?.message}
-                  {...register('parentPhone')}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Parent Email (optional)"
-                  error={!!errors.parentEmail}
-                  helperText={errors.parentEmail?.message}
-                  {...register('parentEmail')}
+                  label="Date of Birth"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  error={!!errors.dateOfBirth}
+                  helperText={errors.dateOfBirth?.message}
+                  {...register('dateOfBirth')}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>

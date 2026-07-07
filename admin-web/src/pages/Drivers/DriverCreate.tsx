@@ -6,15 +6,17 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Grid, Card, CardContent, TextField, MenuItem, Alert, CircularProgress } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import PageHeader from '../../components/common/PageHeader';
-import { driverService } from '../../services/drivers';
+import { driverService, type CreateDriverPayload } from '../../services/drivers';
 import { schoolService } from '../../services/schools';
 import { useAuthStore } from '../../store/authStore';
 
 const driverSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Valid email is required'),
   phone: z.string().min(1, 'Phone is required'),
   licenseNumber: z.string().min(1, 'License number is required'),
+  licenseExpiry: z.string().min(1, 'License expiry is required'),
   schoolId: z.string().min(1, 'School is required'),
 });
 
@@ -24,7 +26,7 @@ export default function DriverCreate() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const { data: schoolsData } = useQuery({
     queryKey: ['schools'],
@@ -33,7 +35,7 @@ export default function DriverCreate() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: DriverForm) => driverService.create(data),
+    mutationFn: (data: CreateDriverPayload) => driverService.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drivers'] });
       navigate('/drivers');
@@ -43,10 +45,8 @@ export default function DriverCreate() {
   const { register, handleSubmit, formState: { errors } } = useForm<DriverForm>({
     resolver: zodResolver(driverSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      licenseNumber: '',
+      firstName: '', lastName: '', email: '', phone: '',
+      licenseNumber: '', licenseExpiry: '',
       schoolId: isSuperAdmin ? '' : (user?.schoolId ?? ''),
     },
   });
@@ -62,7 +62,10 @@ export default function DriverCreate() {
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Grid container spacing={2.5}>
               <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Name" error={!!errors.name} helperText={errors.name?.message} {...register('name')} />
+                <TextField fullWidth label="First Name" error={!!errors.firstName} helperText={errors.firstName?.message} {...register('firstName')} />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="Last Name" error={!!errors.lastName} helperText={errors.lastName?.message} {...register('lastName')} />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="Email" error={!!errors.email} helperText={errors.email?.message} {...register('email')} />
@@ -73,13 +76,12 @@ export default function DriverCreate() {
               <Grid item xs={12} sm={6}>
                 <TextField fullWidth label="License Number" error={!!errors.licenseNumber} helperText={errors.licenseNumber?.message} {...register('licenseNumber')} />
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField fullWidth label="License Expiry" type="date" InputLabelProps={{ shrink: true }} error={!!errors.licenseExpiry} helperText={errors.licenseExpiry?.message} {...register('licenseExpiry')} />
+              </Grid>
               <Grid item xs={12}>
-                <TextField
-                  fullWidth label="School" select
-                  error={!!errors.schoolId} helperText={errors.schoolId?.message}
-                  {...register('schoolId')}
-                  disabled={!isSuperAdmin}
-                >
+                <TextField fullWidth label="School" select error={!!errors.schoolId} helperText={errors.schoolId?.message}
+                  {...register('schoolId')} disabled={!isSuperAdmin}>
                   {isSuperAdmin ? (
                     (schoolsData?.data ?? []).map((s) => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)
                   ) : (

@@ -9,6 +9,7 @@ import TripHistory from '@/pages/TripHistory';
 import Notifications from '@/pages/Notifications';
 import BusTracking from '@/pages/BusTracking';
 import Profile from '@/pages/Profile';
+import NotificationPreferences from '@/pages/NotificationPreferences';
 import NotFound from '@/pages/NotFound';
 
 export const router = createBrowserRouter([
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: 'student/:id/attendance', element: <AttendanceTimeline /> },
       { path: 'student/:id/trips', element: <TripHistory /> },
       { path: 'notifications', element: <Notifications /> },
+      { path: 'notification-preferences', element: <NotificationPreferences /> },
       { path: 'bus-tracking', element: <BusTracking /> },
       { path: 'profile', element: <Profile /> },
     ],

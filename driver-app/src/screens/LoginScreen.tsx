@@ -64,7 +64,7 @@ const LoginScreen: React.FC = () => {
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
             style={styles.input}
-            placeholder="driver@saferide.com"
+            placeholder="ram.driver@saferide.com"
             placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={setEmail}
@@ -99,7 +99,7 @@ const LoginScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footerText}>SafeRide Nepal © 2025</Text>
+          <Text style={styles.footerText}>SafeRide Nepal © 2026</Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

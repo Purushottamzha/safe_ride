@@ -6,7 +6,32 @@ export interface BusFilters {
   limit?: number;
   search?: string;
   schoolId?: string;
-  isActive?: boolean;
+  status?: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE' | 'RETIRED';
+}
+
+export interface CreateBusPayload {
+  plateNumber: string;
+  busNumber: string;
+  model?: string;
+  capacity: number;
+  year?: number;
+  color?: string;
+  status?: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE' | 'RETIRED';
+  gpsDeviceId?: string;
+  cameraDeviceId?: string;
+  schoolId: string;
+}
+
+export interface UpdateBusPayload {
+  plateNumber?: string;
+  busNumber?: string;
+  model?: string;
+  capacity?: number;
+  year?: number;
+  color?: string;
+  status?: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE' | 'RETIRED';
+  gpsDeviceId?: string;
+  cameraDeviceId?: string;
 }
 
 export const busService = {
@@ -20,12 +45,12 @@ export const busService = {
     return response.data;
   },
 
-  create: async (data: Omit<Bus, 'id' | 'createdAt' | 'updatedAt' | 'school' | 'driver' | 'isActive'> & { isActive?: boolean }): Promise<Bus> => {
+  create: async (data: CreateBusPayload): Promise<Bus> => {
     const response = await api.post<Bus>('/buses', data);
     return response.data;
   },
 
-  update: async (id: string, data: Partial<Omit<Bus, 'id' | 'createdAt' | 'updatedAt' | 'school' | 'driver'>>): Promise<Bus> => {
+  update: async (id: string, data: UpdateBusPayload): Promise<Bus> => {
     const response = await api.put<Bus>(`/buses/${id}`, data);
     return response.data;
   },

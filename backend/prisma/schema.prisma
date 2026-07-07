@@ -28,7 +28,17 @@ enum TripType {
 
 enum TripStatus {
   SCHEDULED
+  DRIVER_ASSIGNED
+  BUS_ASSIGNED
+  READY
   ACTIVE
+  DRIVING_TO_PICKUP
+  AT_STOP
+  BOARDING
+  DRIVING_TO_SCHOOL
+  SCHOOL_ARRIVED
+  DRIVING_TO_DROP
+  DROPPING
   COMPLETED
   CANCELLED
 }
@@ -39,6 +49,9 @@ enum ScanType {
 }
 
 enum AttendanceStatus {
+  NOT_BOARDED
+  BOARDED
+  DROPPED
   PRESENT
   ABSENT
   LATE
@@ -59,6 +72,19 @@ enum NotificationChannel {
   WEBSOCKET
   PUSH
   SMS
+}
+
+enum NotificationEventType {
+  TRIP_STARTED
+  BUS_APPROACHING
+  STUDENT_BOARDED
+  STUDENT_EXITED
+  STUDENT_ABSENT
+  TRIP_COMPLETED
+  ROUTE_DEVIATION
+  EMERGENCY_ALERT
+  DELAY_ALERT
+  SYSTEM_ANNOUNCEMENT
 }
 
 enum IncidentSeverity {
@@ -89,17 +115,17 @@ enum VerificationStatus {
 }
 
 model School {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  code      String   @unique
+  code      String    @unique
   address   String
   phone     String
   email     String
   website   String?
-  timezone  String   @default("Asia/Kathmandu")
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  timezone  String    @default("Asia/Kathmandu")
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   users         User[]
@@ -141,14 +167,17 @@ model User {
   updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
 
-  profilePicture String?
-  parent         Parent?
-  driver         Driver?
-  assignedTrips  Trip[]           @relation("DriverTrip")
-  tripVerifications TripEvent[]   @relation("TripVerification")
-  reportedIncidents Incident[]    @relation("ReportedIncidents")
-  resolvedIncidents Incident[]    @relation("ResolvedIncidents")
-  notifications  Notification[]
+  profilePicture          String?
+  parent                  Parent?
+  driver                  Driver?
+  assignedTrips           Trip[]                   @relation("DriverTrip")
+  tripVerifications       TripEvent[]              @relation("TripVerification")
+  reportedIncidents       Incident[]               @relation("ReportedIncidents")
+  resolvedIncidents       Incident[]               @relation("ResolvedIncidents")
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  driverSafetyEvents      DriverSafetyEvent[]
+  driverSafetyScores      DriverSafetyScore[]
 
   @@index([email])
   @@index([role])
@@ -182,7 +211,7 @@ model Role {
 
   rolePermissions RolePermission[]
   schoolId        String?
-  school          School? @relation(fields: [schoolId], references: [id])
+  school          School?          @relation(fields: [schoolId], references: [id])
 
   @@index([name])
   @@map("roles")
@@ -200,31 +229,31 @@ model RolePermission {
 }
 
 model Student {
-  id              String   @id @default(uuid())
-  firstName       String
-  lastName        String
-  dateOfBirth     DateTime
-  grade           String
-  section         String?
-  studentId       String   @unique
-  qrToken         String   @unique
-  qrExpiresAt     DateTime
-  isActive        Boolean  @default(true)
-  profilePicture  String?
-  emergencyNotes  String?
-  address         String
-  phone           String?
-  schoolId        String
-  school          School   @relation(fields: [schoolId], references: [id])
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
+  id             String    @id @default(uuid())
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime
+  grade          String
+  section        String?
+  studentId      String    @unique
+  qrToken        String    @unique
+  qrExpiresAt    DateTime
+  isActive       Boolean   @default(true)
+  profilePicture String?
+  emergencyNotes String?
+  address        String
+  phone          String?
+  schoolId       String
+  school         School    @relation(fields: [schoolId], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
-  parentStudents   StudentParent[]
-  tripEvents       TripEvent[]
-  attendance       Attendance[]
+  parentStudents     StudentParent[]
+  tripEvents         TripEvent[]
+  attendance         Attendance[]
   studentAssignments StudentAssignment[]
-  incidents        Incident[]
+  incidents          Incident[]
 
   @@index([studentId])
   @@index([schoolId])
@@ -234,12 +263,12 @@ model Student {
 }
 
 model Parent {
-  id               String   @id @default(uuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id])
-  emergencyContact Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id])
+  emergencyContact Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
   studentParents StudentParent[]
@@ -249,10 +278,10 @@ model Parent {
 
 model StudentParent {
   studentId String
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   parentId  String
-  parent    Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  isPrimary Boolean @default(false)
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  isPrimary Boolean  @default(false)
   relation  String
   createdAt DateTime @default(now())
 
@@ -263,19 +292,19 @@ model StudentParent {
 }
 
 model Driver {
-  id                String   @id @default(uuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id])
-  licenseNumber     String   @unique
-  licenseExpiry     DateTime
-  isAvailable       Boolean  @default(true)
-  emergencyContact  String?
-  medicalNotes      String?
-  schoolId          String
-  school            School   @relation(fields: [schoolId], references: [id])
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  deletedAt         DateTime?
+  id               String    @id @default(uuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id])
+  licenseNumber    String    @unique
+  licenseExpiry    DateTime
+  isAvailable      Boolean   @default(true)
+  emergencyContact String?
+  medicalNotes     String?
+  schoolId         String
+  school           School    @relation(fields: [schoolId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   driverAssignments DriverAssignment[]
 
@@ -315,22 +344,22 @@ model Bus {
 }
 
 model Route {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
-  code      String   @unique
+  code      String    @unique
   direction String?
   distance  Float?
   duration  Int?
-  isActive  Boolean  @default(true)
+  isActive  Boolean   @default(true)
   schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  school    School    @relation(fields: [schoolId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  routeStops   RouteStop[]
-  assignments  Assignment[]
-  trips        Trip[]
+  routeStops  RouteStop[]
+  assignments Assignment[]
+  trips       Trip[]
 
   @@index([code])
   @@index([schoolId])
@@ -338,16 +367,16 @@ model Route {
 }
 
 model Stop {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String
   address   String
   latitude  Float?
   longitude Float?
-  isActive  Boolean  @default(true)
+  isActive  Boolean   @default(true)
   schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  school    School    @relation(fields: [schoolId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   routeStops         RouteStop[]
@@ -358,13 +387,13 @@ model Stop {
 }
 
 model RouteStop {
-  routeId  String
-  route    Route  @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  stopId   String
-  stop     Stop   @relation(fields: [stopId], references: [id], onDelete: Cascade)
-  sequence Int
-  distance Float?
-  duration Int?
+  routeId   String
+  route     Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stopId    String
+  stop      Stop     @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  sequence  Int
+  distance  Float?
+  duration  Int?
   createdAt DateTime @default(now())
 
   @@id([routeId, stopId])
@@ -374,15 +403,15 @@ model RouteStop {
 }
 
 model Assignment {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   name      String?
   schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
   routeId   String
-  route     Route    @relation(fields: [routeId], references: [id])
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  route     Route     @relation(fields: [routeId], references: [id])
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   driverAssignments  DriverAssignment[]
@@ -397,7 +426,7 @@ model Assignment {
 }
 
 model DriverAssignment {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   driverId     String
@@ -411,7 +440,7 @@ model DriverAssignment {
 }
 
 model BusAssignment {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   busId        String
@@ -425,7 +454,7 @@ model BusAssignment {
 }
 
 model StudentAssignment {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   studentId    String
@@ -442,9 +471,9 @@ model StudentAssignment {
 }
 
 model Trip {
-  id           String     @id @default(uuid())
+  id           String      @id @default(uuid())
   type         TripType
-  status       TripStatus @default(SCHEDULED)
+  status       TripStatus  @default(SCHEDULED)
   scheduledAt  DateTime
   startedAt    DateTime?
   completedAt  DateTime?
@@ -452,22 +481,34 @@ model Trip {
   cancelReason String?
   notes        String?
   driverId     String?
-  driver       User?      @relation("DriverTrip", fields: [driverId], references: [id])
+  driver       User?       @relation("DriverTrip", fields: [driverId], references: [id])
   busId        String?
-  bus          Bus?       @relation(fields: [busId], references: [id])
+  bus          Bus?        @relation(fields: [busId], references: [id])
   routeId      String?
-  route        Route?     @relation(fields: [routeId], references: [id])
+  route        Route?      @relation(fields: [routeId], references: [id])
   assignmentId String?
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
   schoolId     String
-  school       School     @relation(fields: [schoolId], references: [id])
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
+  school       School      @relation(fields: [schoolId], references: [id])
 
-  tripEvents TripEvent[]
-  attendance Attendance[]
-  incidents  Incident[]
+  currentStopId  String?
+  currentStopLat Float?
+  currentStopLng Float?
+  stopSequence   Int     @default(0)
+  totalStops     Int     @default(0)
+  completedStops Int     @default(0)
+  boardCount     Int     @default(0)
+  dropCount      Int     @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tripEvents         TripEvent[]
+  attendance         Attendance[]
+  incidents          Incident[]
+  driverSafetyEvents DriverSafetyEvent[]
+  tripWaypoints      TripWaypoint[]
 
   @@index([schoolId])
   @@index([status])
@@ -479,23 +520,23 @@ model Trip {
 }
 
 model TripEvent {
-  id         String   @id @default(uuid())
-  tripId     String
-  trip       Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  studentId  String?
-  student    Student?  @relation(fields: [studentId], references: [id])
-  scanType   ScanType
-  latitude   Float?
-  longitude  Float?
-  speed      Float?
-  heading    Float?
+  id             String             @id @default(uuid())
+  tripId         String
+  trip           Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  studentId      String?
+  student        Student?           @relation(fields: [studentId], references: [id])
+  scanType       ScanType
+  latitude       Float?
+  longitude      Float?
+  speed          Float?
+  heading        Float?
   cameraImageUrl String?
-  faceVerified  VerificationStatus @default(PENDING)
-  verifiedAt    DateTime?
-  verifiedById  String?
-  verifiedBy    User?    @relation("TripVerification", fields: [verifiedById], references: [id])
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  faceVerified   VerificationStatus @default(PENDING)
+  verifiedAt     DateTime?
+  verifiedById   String?
+  verifiedBy     User?              @relation("TripVerification", fields: [verifiedById], references: [id])
+  metadata       Json?
+  createdAt      DateTime           @default(now())
 
   @@index([tripId])
   @@index([studentId])
@@ -558,6 +599,75 @@ model Notification {
   @@map("notifications")
 }
 
+model NotificationPreference {
+  id        String                @id @default(uuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id])
+  eventType NotificationEventType
+  channel   NotificationChannel   @default(IN_APP)
+  enabled   Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([userId, eventType, channel])
+  @@index([userId])
+  @@index([eventType])
+  @@map("notification_preferences")
+}
+
+enum DriverSafetyEventType {
+  OVERSPEED
+  ROUTE_DEVIATION
+  LONG_IDLE
+  MISSED_STOP
+  HARD_BRAKE
+  GPS_DISCONNECTED
+  EMERGENCY_TRIGGERED
+}
+
+model DriverSafetyEvent {
+  id          String                @id @default(uuid())
+  driverId    String
+  driver      User                  @relation(fields: [driverId], references: [id])
+  tripId      String?
+  trip        Trip?                 @relation(fields: [tripId], references: [id])
+  eventType   DriverSafetyEventType
+  description String
+  severity    Int                   @default(1)
+  latitude    Float?
+  longitude   Float?
+  speed       Float?
+  value       Float?
+  metadata    Json?
+  createdAt   DateTime              @default(now())
+
+  @@index([driverId])
+  @@index([tripId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("driver_safety_events")
+}
+
+model DriverSafetyScore {
+  id              String   @id @default(uuid())
+  driverId        String   @unique
+  driver          User     @relation(fields: [driverId], references: [id])
+  overallScore    Float    @default(100.0)
+  tripCount       Int      @default(0)
+  totalDistance   Float    @default(0)
+  overspeedCount  Int      @default(0)
+  deviationCount  Int      @default(0)
+  idleEventCount  Int      @default(0)
+  missedStopCount Int      @default(0)
+  hardBrakeCount  Int      @default(0)
+  gpsDropCount    Int      @default(0)
+  emergencyCount  Int      @default(0)
+  lastUpdated     DateTime @default(now()) @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@map("driver_safety_scores")
+}
+
 model Incident {
   id           String           @id @default(uuid())
   title        String
@@ -611,6 +721,21 @@ model SystemLog {
   @@index([timestamp])
   @@index([path])
   @@map("system_logs")
+}
+
+model TripWaypoint {
+  id        String   @id @default(uuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  speed     Float?
+  heading   Float?
+  occupancy Int?
+  timestamp DateTime @default(now())
+
+  @@index([tripId, timestamp])
+  @@map("trip_waypoints")
 }
 
 model AuditLog {

@@ -10,11 +10,18 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import HistoryIcon from '@mui/icons-material/History';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import DoneIcon from '@mui/icons-material/Done';
+import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
+import PersonIcon from '@mui/icons-material/Person';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { getStudentById } from '@/services/students';
 import { getTodayStatus } from '@/services/attendance';
 import { getActiveTrip } from '@/services/trips';
 import LoadingScreen from '@/components/common/LoadingScreen';
+
+const MotionBox = motion.create(Box);
+const MotionCard = motion.create(Card);
 
 export default function StudentStatus() {
   const { id } = useParams<{ id: string }>();
@@ -60,19 +67,29 @@ export default function StudentStatus() {
   const events = activeTrip?.events ?? [];
 
   return (
-    <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, maxWidth: 800, mx: 'auto' }}>
-      <Card sx={{ mb: 2 }}>
+    <MotionBox
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, sm: 3 }, maxWidth: 800, mx: 'auto' }}
+    >
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        sx={{ mb: 2 }}
+      >
         <CardContent sx={{ p: { xs: 2, sm: 2.5 }, textAlign: 'center' }}>
           <Avatar
             src={student.photoUrl}
             sx={{
-              width: 72,
-              height: 72,
+              width: 80,
+              height: 80,
               mx: 'auto',
               mb: 1.5,
               bgcolor: 'primary.light',
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: 700,
+              border: '3px solid',
+              borderColor: statusColor,
             }}
           >
             {student.name.charAt(0)}
@@ -85,40 +102,108 @@ export default function StudentStatus() {
           </Typography>
 
           {loadingStatus ? (
-            <Skeleton variant="rounded" height={56} sx={{ borderRadius: 2 }} />
+            <Skeleton variant="rounded" height={60} sx={{ borderRadius: 2 }} />
           ) : (
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 3,
-                bgcolor: `${statusColor}12`,
-                border: `2px solid ${statusColor}40`,
-              }}
-            >
-              <Box
+            <AnimatePresence mode="wait">
+              <MotionBox
+                key={todayStatus?.status || 'unknown'}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 sx={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: '50%',
-                  bgcolor: statusColor,
-                  mx: 'auto',
-                  mb: 1,
+                  p: 2,
+                  borderRadius: 3,
+                  bgcolor: `${statusColor}12`,
+                  border: `2px solid ${statusColor}40`,
                 }}
-              />
-              <Typography variant="h5" sx={{ fontWeight: 700, color: statusColor, mb: 0.5 }}>
-                {todayStatus?.message || 'Status unavailable'}
-              </Typography>
-              {todayStatus?.lastScanTime && (
-                <Typography variant="caption" color="text.secondary">
-                  Last updated: {new Date(todayStatus.lastScanTime).toLocaleTimeString()}
+              >
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    bgcolor: statusColor,
+                    mx: 'auto',
+                    mb: 1,
+                    animation: todayStatus?.currentTripStatus === 'IN_TRANSIT'
+                      ? 'pulse 1.5s infinite'
+                      : undefined,
+                    '@keyframes pulse': {
+                      '0%, 100%': { boxShadow: `0 0 0 0 ${statusColor}80` },
+                      '50%': { boxShadow: `0 0 0 8px ${statusColor}00` },
+                    },
+                  }}
+                />
+                <Typography variant="h5" sx={{ fontWeight: 700, color: statusColor, mb: 0.5 }}>
+                  {todayStatus?.message || 'Status unavailable'}
                 </Typography>
-              )}
-            </Box>
+                {todayStatus?.lastScanTime && (
+                  <Typography variant="caption" color="text.secondary">
+                    Last updated: {new Date(todayStatus.lastScanTime).toLocaleTimeString()}
+                  </Typography>
+                )}
+              </MotionBox>
+            </AnimatePresence>
           )}
         </CardContent>
-      </Card>
+      </MotionCard>
 
-      <Card sx={{ mb: 2 }}>
+      {activeTrip && (
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          sx={{ mb: 2 }}
+        >
+          <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+            <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+              Driver & Bus Info
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
+                <PersonIcon color="action" />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {activeTrip.driverName || 'Unknown Driver'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Driver
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
+                <DirectionsBusIcon color="primary" />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {activeTrip.busNumber || 'Unknown'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Bus Number
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
+                <AccessTimeIcon color="action" />
+                <Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {activeTrip.direction === 'TO_SCHOOL' ? 'To School' : 'From School'}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Direction
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </CardContent>
+        </MotionCard>
+      )}
+
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        sx={{ mb: 2 }}
+      >
         <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
             Today's Timeline
@@ -136,7 +221,13 @@ export default function StudentStatus() {
                 const isLast = idx === events.length - 1;
                 const isBoard = event.type.includes('BOARD');
                 return (
-                  <Box key={event.id} sx={{ display: 'flex', gap: 2, minHeight: 64 }}>
+                  <MotionBox
+                    key={event.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + idx * 0.05 }}
+                    sx={{ display: 'flex', gap: 2, minHeight: 64 }}
+                  >
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 32 }}>
                       <Box
                         sx={{
@@ -164,9 +255,11 @@ export default function StudentStatus() {
                         {event.type === 'EXIT_IN' && 'Arrived at school'}
                         {event.type === 'EXIT_OUT' && 'Arrived home'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {event.location}
-                      </Typography>
+                      {event.location && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {event.location}
+                        </Typography>
+                      )}
                       <Typography variant="caption" color="text.disabled">
                         {new Date(event.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
@@ -174,13 +267,13 @@ export default function StudentStatus() {
                         })}
                       </Typography>
                     </Box>
-                  </Box>
+                  </MotionBox>
                 );
               })}
             </Box>
           )}
         </CardContent>
-      </Card>
+      </MotionCard>
 
       <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
         <Button
@@ -202,6 +295,6 @@ export default function StudentStatus() {
           Trip History
         </Button>
       </Box>
-    </Box>
+    </MotionBox>
   );
 }

@@ -27,14 +27,14 @@ export default function UserList() {
   });
 
   const users = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<User>[] = [
-    { id: 'name', label: 'Name', render: (row) => row.name, sortable: true },
+    { id: 'name', label: 'Name', render: (row) => `${row.firstName} ${row.lastName}`, sortable: true },
     { id: 'email', label: 'Email', render: (row) => row.email },
     { id: 'role', label: 'Role', render: (row) => <Chip label={row.role.replace('_', ' ')} size="small" variant="outlined" /> },
     { id: 'school', label: 'School', render: (row) => row.school?.name ?? '-' },
-    { id: 'status', label: 'Status', render: (row) => <StatusBadge status={row.isActive ? 'active' : 'inactive'} /> },
+    { id: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status === 'ACTIVE' ? 'active' : 'inactive'} /> },
     {
       id: 'actions', label: 'Actions', width: 100,
       render: (row) => (

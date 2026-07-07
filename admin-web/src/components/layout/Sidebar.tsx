@@ -18,13 +18,17 @@ import {
   DirectionsBus as BusesIcon,
   Route as RoutesIcon,
   SwapHoriz as AssignmentsIcon,
+  CalendarMonth as CalendarIcon,
   Map as TripsIcon,
   Checklist as AttendanceIcon,
   Notifications as NotificationsIcon,
   ReportProblem as IncidentsIcon,
   Assessment as ReportsIcon,
+  Analytics as AnalyticsIcon,
   School as SchoolsIcon,
   PeopleAlt as UsersIcon,
+  Build as MaintenanceIcon,
+  VerifiedUser as SafetyIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
@@ -49,11 +53,15 @@ const navItems: NavItem[] = [
   { label: 'Buses', path: '/buses', icon: <BusesIcon /> },
   { label: 'Routes', path: '/routes', icon: <RoutesIcon /> },
   { label: 'Assignments', path: '/assignments', icon: <AssignmentsIcon /> },
+  { label: 'Calendar', path: '/assignments/calendar', icon: <CalendarIcon /> },
   { label: 'Trips', path: '/trips', icon: <TripsIcon /> },
   { label: 'Attendance', path: '/attendance', icon: <AttendanceIcon /> },
   { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
   { label: 'Incidents', path: '/incidents', icon: <IncidentsIcon /> },
   { label: 'Reports', path: '/reports', icon: <ReportsIcon /> },
+  { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
+  { label: 'Maintenance', path: '/maintenance', icon: <MaintenanceIcon /> },
+  { label: 'Driver Safety', path: '/driver-safety', icon: <SafetyIcon /> },
   { label: 'Schools', path: '/schools', icon: <SchoolsIcon />, adminOnly: true },
   { label: 'Users', path: '/users', icon: <UsersIcon />, adminOnly: true },
 ];
@@ -66,7 +74,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const user = useAuthStore((s) => s.user);
 
   const filteredItems = navItems.filter(
-    (item) => !item.adminOnly || user?.role === 'super_admin'
+    (item) => !item.adminOnly || user?.role === 'SUPER_ADMIN'
   );
 
   const content = (

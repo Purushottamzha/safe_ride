@@ -8,7 +8,10 @@ import { useThemeStore } from './store/themeStore';
 import { useAuthStore } from './store/authStore';
 import { useAuth } from './hooks/useAuth';
 import { createRouter } from './router';
+import { socketService } from './services/socket';
 import LoadingScreen from './components/common/LoadingScreen';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import { ToastProvider } from './components/common/ToastProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,6 +22,22 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function SocketInitializer() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const token = useAuthStore((s) => s.accessToken);
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      socketService.connect(token);
+    } else {
+      socketService.disconnect();
+    }
+    return () => { socketService.disconnect(); };
+  }, [isAuthenticated, token]);
+
+  return null;
+}
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isLoading, loadUser } = useAuth();
@@ -32,7 +51,12 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
     return <LoadingScreen />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <SocketInitializer />
+      {children}
+    </>
+  );
 }
 
 function AppContent() {
@@ -57,10 +81,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from '../notifications/notification.gateway';
+import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { Prisma, ScanType } from '@prisma/client';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class QRService {
   constructor(
     private prisma: PrismaService,
     private notificationGateway: NotificationGateway,
+    private notificationRules: NotificationRulesService,
   ) {}
 
   async validateQRToken(token: string) {
@@ -203,40 +205,31 @@ export class QRService {
       },
     });
 
+    const parentUserIds = parentRelations.map(r => r.parent.userId);
+    const studentName = `${student.firstName} ${student.lastName}`;
     const scanLabel = data.scanType === 'BOARD_IN' ? 'boarded' : 'exited';
-    const tripLabel = trip.type === 'MORNING' ? 'morning' : 'afternoon';
-    const notificationTitle =
-      data.scanType === 'BOARD_IN' ? 'Student Boarded Bus' : 'Student Exited Bus';
-    const notificationBody = `${student.firstName} ${student.lastName} has ${scanLabel} the ${tripLabel} trip.`;
 
-    const notificationPayload = {
-      eventId: tripEvent.id,
-      studentId: data.studentId,
-      studentName: `${student.firstName} ${student.lastName}`,
-      tripId: data.tripId,
-      tripType: trip.type,
-      scanType: data.scanType,
-      timestamp: new Date().toISOString(),
-    };
+    for (const userId of parentUserIds) {
+      this.notificationGateway.sendToUser(userId, 'attendance:update', {
+        eventId: tripEvent.id,
+        studentId: data.studentId,
+        studentName,
+        tripId: data.tripId,
+        tripType: trip.type,
+        scanType: data.scanType,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-    for (const rel of parentRelations) {
-      this.notificationGateway.sendToUser(
-        rel.parent.userId,
-        'attendance:update',
-        notificationPayload,
-      );
-
-      await this.prisma.notification.create({
-        data: {
-          type: 'ATTENDANCE',
-          channel: 'WEBSOCKET',
-          title: notificationTitle,
-          body: notificationBody,
-          userId: rel.parent.userId,
-          schoolId: trip.schoolId,
-          data: notificationPayload,
-          sentAt: new Date(),
-        },
+    if (data.scanType === 'BOARD_IN') {
+      await this.notificationRules.handleStudentBoarded({
+        studentId: data.studentId, studentName, parentUserIds,
+        tripId: data.tripId, schoolId: trip.schoolId,
+      });
+    } else {
+      await this.notificationRules.handleStudentExited({
+        studentId: data.studentId, studentName, parentUserIds,
+        tripId: data.tripId, schoolId: trip.schoolId,
       });
     }
 

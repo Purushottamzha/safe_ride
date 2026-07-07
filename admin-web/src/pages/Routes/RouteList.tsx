@@ -27,11 +27,11 @@ export default function RouteList() {
   });
 
   const routes = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<Route>[] = [
     { id: 'name', label: 'Route Name', render: (row) => <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><RouteIcon fontSize="small" color="action" /><Typography variant="body2">{row.name}</Typography></Box>, sortable: true },
-    { id: 'description', label: 'Description', render: (row) => row.description ?? '-' },
+    { id: 'code', label: 'Code', render: (row) => row.code },
     { id: 'stops', label: 'Stops', render: (row) => row.stops?.length ?? 0 },
     { id: 'school', label: 'School', render: (row) => row.school?.name ?? '-' },
     { id: 'status', label: 'Status', render: (row) => <StatusBadge status={row.isActive ? 'active' : 'inactive'} /> },

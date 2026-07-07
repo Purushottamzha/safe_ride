@@ -6,12 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Grid, Card, CardContent, TextField, MenuItem, Alert, CircularProgress } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import PageHeader from '../../components/common/PageHeader';
-import { busService } from '../../services/buses';
+import { busService, type CreateBusPayload } from '../../services/buses';
 import { schoolService } from '../../services/schools';
 import { driverService } from '../../services/drivers';
 import { useAuthStore } from '../../store/authStore';
 
 const busSchema = z.object({
+  busNumber: z.string().min(1, 'Bus number is required'),
   plateNumber: z.string().min(1, 'Plate number is required'),
   model: z.string().min(1, 'Model is required'),
   capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
@@ -25,7 +26,7 @@ export default function BusCreate() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const { data: schoolsData } = useQuery({
     queryKey: ['schools'],
@@ -39,21 +40,28 @@ export default function BusCreate() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: BusForm) => busService.create(data),
+    mutationFn: (data: CreateBusPayload) => busService.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['buses'] }); navigate('/buses'); },
   });
 
   const { register, handleSubmit, formState: { errors } } = useForm<BusForm>({
     resolver: zodResolver(busSchema),
     defaultValues: {
-      plateNumber: '', model: '', capacity: 40,
+      busNumber: '', plateNumber: '', model: '', capacity: 40,
       schoolId: isSuperAdmin ? '' : (user?.schoolId ?? ''),
       driverId: '',
     },
   });
 
   const onSubmit = (data: BusForm) => {
-    createMutation.mutate(data);
+    const payload: CreateBusPayload = {
+      busNumber: data.busNumber,
+      plateNumber: data.plateNumber,
+      model: data.model || undefined,
+      capacity: data.capacity,
+      schoolId: data.schoolId,
+    };
+    createMutation.mutate(payload);
   };
 
   return (
@@ -64,10 +72,13 @@ export default function BusCreate() {
           {createMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to create bus</Alert>}
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
+                <TextField fullWidth label="Bus Number" error={!!errors.busNumber} helperText={errors.busNumber?.message} {...register('busNumber')} />
+              </Grid>
+              <Grid item xs={12} sm={4}>
                 <TextField fullWidth label="Plate Number" error={!!errors.plateNumber} helperText={errors.plateNumber?.message} {...register('plateNumber')} />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={4}>
                 <TextField fullWidth label="Model" error={!!errors.model} helperText={errors.model?.message} {...register('model')} />
               </Grid>
               <Grid item xs={12} sm={4}>
@@ -83,7 +94,7 @@ export default function BusCreate() {
               <Grid item xs={12} sm={4}>
                 <TextField fullWidth label="Driver (optional)" select {...register('driverId')} defaultValue="">
                   <MenuItem value="">No Driver</MenuItem>
-                  {(driversData?.data ?? []).map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)}
+                  {(driversData?.data ?? []).map((d) => <MenuItem key={d.id} value={d.id}>{d.user.firstName} {d.user.lastName}</MenuItem>)}
                 </TextField>
               </Grid>
             </Grid>

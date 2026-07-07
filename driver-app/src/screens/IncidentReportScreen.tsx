@@ -15,11 +15,12 @@ import { colors, spacing, typography } from '../theme';
 import * as incidentsService from '../services/incidents';
 
 type RootStackParamList = {
-  Trips: undefined;
-  TripDetail: { tripId: string };
-  StudentList: { tripId: string };
-  QRScanner: { tripId: string };
+  Home: undefined;
+  ActiveTrip: { tripId: string };
+  QRScanner: { tripId: string; scanType?: 'BOARD_IN' | 'EXIT_OUT' };
+  EndTripSummary: { tripId: string; stats?: any };
   IncidentReport: { tripId?: string };
+  Emergency: { tripId: string };
 };
 
 type IncidentReportRouteProp = RouteProp<RootStackParamList, 'IncidentReport'>;

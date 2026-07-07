@@ -43,7 +43,7 @@ export default function NotificationList() {
     <Box>
       <PageHeader
         title="Notifications"
-        subtitle={data ? `${data.total} notifications` : ''}
+        subtitle={data ? `${data.meta?.total ?? data.data.length} notifications` : ''}
         actions={[
           { label: 'Mark All Read', variant: 'outlined', icon: <MarkEmailRead />, onClick: () => markAllReadMutation.mutate() },
         ]}
@@ -89,7 +89,7 @@ export default function NotificationList() {
                       {notification.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {notification.message}
+                      {notification.body}
                     </Typography>
                     <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block' }}>
                       {new Date(notification.createdAt).toLocaleString()}

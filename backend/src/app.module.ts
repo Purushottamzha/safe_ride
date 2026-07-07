@@ -27,6 +27,10 @@ import { AuditModule } from './modules/audit/audit.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ExportModule } from './modules/export/export.module';
+import { TrackingModule } from './modules/tracking/tracking.module';
+import { DriverSafetyModule } from './modules/driver-safety/driver-safety.module';
+import { SimulatorModule } from './modules/simulator/simulator.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -72,6 +76,10 @@ import configuration from './config/configuration';
     UploadModule,
     DashboardModule,
     ExportModule,
+    TrackingModule,
+    DriverSafetyModule,
+    SimulatorModule,
+    AnalyticsModule,
   ],
   providers: [
     {

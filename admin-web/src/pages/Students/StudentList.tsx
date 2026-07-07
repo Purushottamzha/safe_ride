@@ -55,7 +55,7 @@ export default function StudentList() {
   });
 
   const students = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<Student>[] = [
     { id: 'name', label: 'Name', render: (row) => `${row.firstName} ${row.lastName}`, sortable: true },
@@ -67,9 +67,9 @@ export default function StudentList() {
       render: (row) => <StatusBadge status={row.isActive ? 'active' : 'inactive'} />,
     },
     {
-      id: 'parentPhone',
-      label: 'Parent Phone',
-      render: (row) => row.parentPhone,
+      id: 'phone',
+      label: 'Phone',
+      render: (row) => row.phone ?? '-',
     },
     {
       id: 'actions',

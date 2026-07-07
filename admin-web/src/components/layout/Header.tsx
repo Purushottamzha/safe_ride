@@ -41,7 +41,7 @@ export default function Header({ onDrawerToggle }: HeaderProps) {
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  const displayName = user?.name ?? user?.email ?? 'User';
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'User';
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (

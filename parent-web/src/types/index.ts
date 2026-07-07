@@ -61,6 +61,7 @@ export interface Trip {
   exitTime?: string;
   duration?: number;
   events: TripEvent[];
+  routePoints?: [number, number][];
 }
 
 export type NotificationType = 'BOARDING' | 'ARRIVAL' | 'DEPARTURE' | 'ABSENT' | 'LATE' | 'SYSTEM';
@@ -73,6 +74,14 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   studentId?: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  userId: string;
+  eventType: string;
+  channel: string;
+  enabled: boolean;
 }
 
 export interface LoginCredentials {

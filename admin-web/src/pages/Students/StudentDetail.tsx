@@ -20,9 +20,7 @@ import {
   Divider,
 } from '@mui/material';
 import {
-  Person,
   Phone,
-  Email,
   Home,
   School,
   Refresh,
@@ -132,26 +130,12 @@ export default function StudentDetail() {
                   </Box>
                 )}
               </Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="subtitle2" sx={{ mb: 1, textAlign: 'left' }}>
-                Parent Information
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, textAlign: 'left' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Person fontSize="small" color="action" />
-                  <Typography variant="body2">{student.parentName}</Typography>
-                </Box>
+              {student.phone && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Phone fontSize="small" color="action" />
-                  <Typography variant="body2">{student.parentPhone}</Typography>
+                  <Typography variant="body2">{student.phone}</Typography>
                 </Box>
-                {student.parentEmail && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Email fontSize="small" color="action" />
-                    <Typography variant="body2">{student.parentEmail}</Typography>
-                  </Box>
-                )}
-              </Box>
+              )}
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle2" sx={{ mb: 1, textAlign: 'left' }}>
                 QR Code
@@ -169,7 +153,7 @@ export default function StudentDetail() {
               >
                 <QrCode sx={{ fontSize: 80, color: 'text.secondary' }} />
                 <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-all', textAlign: 'center' }}>
-                  {student.qrCode}
+                  {student.qrToken ?? '-'}
                 </Typography>
               </Box>
             </CardContent>
@@ -205,7 +189,7 @@ export default function StudentDetail() {
                           <TableCell>{record.date}</TableCell>
                           <TableCell>{record.trip?.type ?? '-'}</TableCell>
                           <TableCell><StatusBadge status={record.status} /></TableCell>
-                          <TableCell>{record.scanTime ?? '-'}</TableCell>
+                          <TableCell>{record.boardTime ?? record.exitTime ?? '-'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

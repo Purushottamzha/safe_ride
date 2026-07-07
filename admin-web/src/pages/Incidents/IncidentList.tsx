@@ -55,14 +55,14 @@ export default function IncidentList() {
   });
 
   const incidents = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const total = data?.meta?.total ?? 0;
 
   const columns: Column<Incident>[] = [
     { id: 'title', label: 'Title', render: (row) => row.title, sortable: true },
     { id: 'severity', label: 'Severity', render: (row) => <StatusBadge status={row.severity} /> },
     { id: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-    { id: 'reportedBy', label: 'Reported By', render: (row) => row.reporter?.name ?? '-' },
-    { id: 'trip', label: 'Trip', render: (row) => row.trip?.date ?? '-' },
+    { id: 'reportedBy', label: 'Reported By', render: (row) => row.reportedBy ? `${row.reportedBy.firstName} ${row.reportedBy.lastName}` : '-' },
+    { id: 'trip', label: 'Trip', render: (row) => row.tripId ?? '-' },
     { id: 'date', label: 'Date', render: (row) => new Date(row.createdAt).toLocaleDateString(), sortable: true },
     {
       id: 'actions', label: 'Actions', width: 140,
@@ -70,7 +70,7 @@ export default function IncidentList() {
         <Box sx={{ display: 'flex', gap: 0.25 }}>
           <Tooltip title="View"><IconButton size="small"><Visibility fontSize="small" /></IconButton></Tooltip>
           <Tooltip title="Edit"><IconButton size="small"><Edit fontSize="small" /></IconButton></Tooltip>
-          {(row.status === 'open' || row.status === 'investigating') && (
+          {(row.status === 'REPORTED' || row.status === 'INVESTIGATING') && (
             <Tooltip title="Resolve">
               <IconButton size="small" color="success" onClick={(e) => { e.stopPropagation(); setResolveDialog(row.id); }}>
                 <CheckCircle fontSize="small" />
@@ -95,18 +95,18 @@ export default function IncidentList() {
         <TextField select size="small" label="Status" value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} sx={{ minWidth: 140 }}>
           <MenuItem value="">All Status</MenuItem>
-          <MenuItem value="open">Open</MenuItem>
-          <MenuItem value="investigating">Investigating</MenuItem>
-          <MenuItem value="resolved">Resolved</MenuItem>
-          <MenuItem value="closed">Closed</MenuItem>
+          <MenuItem value="REPORTED">Reported</MenuItem>
+          <MenuItem value="INVESTIGATING">Investigating</MenuItem>
+          <MenuItem value="RESOLVED">Resolved</MenuItem>
+          <MenuItem value="CLOSED">Closed</MenuItem>
         </TextField>
         <TextField select size="small" label="Severity" value={severityFilter}
           onChange={(e) => { setSeverityFilter(e.target.value); setPage(0); }} sx={{ minWidth: 140 }}>
           <MenuItem value="">All Severity</MenuItem>
-          <MenuItem value="low">Low</MenuItem>
-          <MenuItem value="medium">Medium</MenuItem>
-          <MenuItem value="high">High</MenuItem>
-          <MenuItem value="critical">Critical</MenuItem>
+          <MenuItem value="LOW">Low</MenuItem>
+          <MenuItem value="MEDIUM">Medium</MenuItem>
+          <MenuItem value="HIGH">High</MenuItem>
+          <MenuItem value="CRITICAL">Critical</MenuItem>
         </TextField>
       </Stack>
       {deleteMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to delete incident</Alert>}
