@@ -203,7 +203,7 @@ describe('PendingStudentsService', () => {
         ...mockPendingRequest, status: 'REJECTED',
       });
 
-      const result = await service.reject('pending-1', 'admin-1', 'Not eligible');
+      const result = await service.reject('pending-1', 'admin-1', 'Not eligible') as unknown as { status: string };
       expect(result.status).toBe('REJECTED');
       expect(prisma.pendingStudentRequest.updateMany).toHaveBeenCalledWith({
         where: { id: 'pending-1', status: 'PENDING' },
@@ -215,7 +215,7 @@ describe('PendingStudentsService', () => {
       prisma.pendingStudentRequest.updateMany.mockResolvedValueOnce({ count: 1 });
       prisma.pendingStudentRequest.findUnique.mockResolvedValue({ ...mockPendingRequest, status: 'REJECTED' });
 
-      const result = await service.reject('pending-1', 'admin-1');
+      const result = await service.reject('pending-1', 'admin-1') as unknown as { status: string };
       expect(result.status).toBe('REJECTED');
 
       prisma.pendingStudentRequest.updateMany.mockResolvedValueOnce({ count: 0 });
