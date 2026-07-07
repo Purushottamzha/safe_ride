@@ -58,6 +58,12 @@ enum AttendanceStatus {
   EXCUSED
 }
 
+enum StudentRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum NotificationType {
   ATTENDANCE
   TRIP_UPDATE
@@ -260,6 +266,34 @@ model Student {
   @@index([qrToken])
   @@index([grade, section])
   @@map("students")
+}
+
+model PendingStudentRequest {
+  id             String                    @id @default(uuid())
+  firstName      String
+  lastName       String
+  dateOfBirth    DateTime
+  grade          String
+  section        String?
+  address        String
+  phone          String?
+  profilePicture String?
+  schoolId       String
+  school         School                    @relation(fields: [schoolId], references: [id])
+  parentId       String
+  parent         Parent                    @relation(fields: [parentId], references: [id])
+  status         StudentRegistrationStatus @default(PENDING)
+  adminNotes     String?
+  reviewedById   String?
+  reviewedBy     User?                     @relation(fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([parentId])
+  @@map("pending_student_requests")
 }
 
 model Parent {

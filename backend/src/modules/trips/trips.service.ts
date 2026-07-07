@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from '../notifications/notification.gateway';
 import { NotificationRulesService } from '../notifications/notification-rules.service';
 import { Prisma, TripType, TripStatus } from '@prisma/client';
+import { IncidentsService } from '../incidents/incidents.service';
 
 const VALID_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
   SCHEDULED: ['DRIVER_ASSIGNED', 'CANCELLED'],
@@ -27,6 +28,7 @@ export class TripsService {
     private prisma: PrismaService,
     private notificationGateway: NotificationGateway,
     private notificationRules: NotificationRulesService,
+    private incidentsService: IncidentsService,
   ) {}
 
   private assertValidTransition(current: TripStatus, next: TripStatus): void {
@@ -300,7 +302,7 @@ export class TripsService {
     this.assertValidTransition(trip.status, 'DRIVING_TO_SCHOOL');
 
     const boardCount = await this.prisma.attendance.count({
-      where: { tripId: id, status: { in: ['BOARDED', 'PRESENT'] } },
+      where: { tripId: id, boardTime: { not: null } },
     });
 
     const nextStatus = trip.type === 'MORNING' ? TripStatus.DRIVING_TO_SCHOOL : TripStatus.DRIVING_TO_DROP;
@@ -321,13 +323,42 @@ export class TripsService {
     return this.updateTripStatus(id, TripStatus.DRIVING_TO_DROP);
   }
 
-  async completeTrip(id: string, dto?: { notes?: string }) {
+  async completeTrip(id: string, dto?: { notes?: string; force?: boolean; unresolvedReason?: string; userId?: string }) {
     const trip = await this.prisma.trip.findFirst({ where: { id, deletedAt: null } });
     if (!trip) throw new NotFoundException('Trip not found');
     this.assertValidTransition(trip.status, 'COMPLETED');
 
+    const unaccounted = await this.prisma.attendance.findMany({
+      where: {
+        tripId: id,
+        boardTime: { not: null },
+        exitTime: null,
+      },
+      include: {
+        student: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+
+    if (unaccounted.length > 0) {
+      const studentNames = unaccounted.map(a => `${a.student.firstName} ${a.student.lastName}`).join(', ');
+
+      if (!dto?.force) {
+        throw new BadRequestException(
+          `Cannot complete trip: ${unaccounted.length} student(s) still unaccounted for: ${studentNames}. Use force=true to override.`,
+        );
+      }
+
+      await this.incidentsService.create({
+        title: 'Students not confirmed exited',
+        description: dto.unresolvedReason || `Trip completed with ${unaccounted.length} student(s) not confirmed as exited: ${studentNames}`,
+        severity: 'MEDIUM',
+        reportedById: dto.userId || 'system',
+        tripId: id,
+      });
+    }
+
     const dropCount = await this.prisma.attendance.count({
-      where: { tripId: id, status: 'DROPPED' },
+      where: { tripId: id, exitTime: { not: null } },
     });
 
     const result = await this.updateTripStatus(id, TripStatus.COMPLETED, {

@@ -6,6 +6,8 @@ import Typography from '@mui/material/Typography';
 import Avatar from '@mui/material/Avatar';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import PeopleIcon from '@mui/icons-material/People';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import Fab from '@mui/material/Fab';
 import { useQuery } from '@tanstack/react-query';
 import { getMyChildren } from '@/services/students';
 import { getTodayStatus } from '@/services/attendance';
@@ -118,6 +120,16 @@ export default function StudentsList() {
           <StudentListItem key={student.id} student={student} />
         ))
       )}
+
+      <Fab
+        variant="extended"
+        color="primary"
+        sx={{ position: 'fixed', bottom: { xs: 80, sm: 32 }, right: 32 }}
+        onClick={() => navigate('/register-student')}
+      >
+        <PersonAddIcon sx={{ mr: 1 }} />
+        Register New Student
+      </Fab>
     </Box>
   );
 }

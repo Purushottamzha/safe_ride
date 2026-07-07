@@ -11,6 +11,7 @@ import BusTracking from '@/pages/BusTracking';
 import Profile from '@/pages/Profile';
 import NotificationPreferences from '@/pages/NotificationPreferences';
 import NotFound from '@/pages/NotFound';
+import RegisterStudent from '@/pages/RegisterStudent';
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
       { path: 'students', element: <StudentsList /> },
+      { path: 'register-student', element: <RegisterStudent /> },
       { path: 'student/:id', element: <StudentStatus /> },
       { path: 'student/:id/attendance', element: <AttendanceTimeline /> },
       { path: 'student/:id/trips', element: <TripHistory /> },

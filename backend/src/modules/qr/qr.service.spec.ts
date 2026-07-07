@@ -161,5 +161,81 @@ describe('QRService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should set isLate on BOARD_IN when scan time exceeds grace period', async () => {
+      const lateScheduledAt = new Date();
+      lateScheduledAt.setHours(7, 0, 0, 0); // 7:00 AM scheduled
+
+      prisma.student.findFirst.mockResolvedValue(mockStudent);
+      prisma.trip.findFirst.mockResolvedValue({
+        ...mockTrip,
+        scheduledAt: lateScheduledAt,
+      });
+      prisma.tripEvent.findFirst.mockResolvedValue(null);
+      prisma.tripEvent.create.mockResolvedValue({
+        id: 'event-late',
+        tripId: 'trip-1',
+        studentId: 'student-1',
+        scanType: ScanType.BOARD_IN,
+      });
+      prisma.attendance.upsert.mockResolvedValue({
+        id: 'att-late',
+        isLate: true,
+        lateMinutes: 10,
+        status: 'LATE',
+      });
+      prisma.studentParent.findMany.mockResolvedValue([]);
+
+      const result = await service.scanQR({
+        studentId: 'student-1',
+        tripId: 'trip-1',
+        scanType: ScanType.BOARD_IN,
+      });
+
+      expect(result.event.scanType).toBe(ScanType.BOARD_IN);
+      expect(prisma.attendance.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({
+            isLate: expect.any(Boolean),
+            lateMinutes: expect.any(Number),
+          }),
+        }),
+      );
+    });
+
+    it('should not set isLate on BOARD_IN when scanning before grace period', async () => {
+      const earlyScheduledAt = new Date();
+      earlyScheduledAt.setHours(23, 0, 0, 0); // Far future so not late
+
+      prisma.student.findFirst.mockResolvedValue(mockStudent);
+      prisma.trip.findFirst.mockResolvedValue({
+        ...mockTrip,
+        scheduledAt: earlyScheduledAt,
+      });
+      prisma.tripEvent.findFirst.mockResolvedValue(null);
+      prisma.tripEvent.create.mockResolvedValue({
+        id: 'event-on-time',
+        tripId: 'trip-1',
+        studentId: 'student-1',
+        scanType: ScanType.BOARD_IN,
+      });
+      prisma.attendance.upsert.mockResolvedValue({});
+      prisma.studentParent.findMany.mockResolvedValue([]);
+
+      await service.scanQR({
+        studentId: 'student-1',
+        tripId: 'trip-1',
+        scanType: ScanType.BOARD_IN,
+      });
+
+      expect(prisma.attendance.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({
+            isLate: false,
+            lateMinutes: 0,
+          }),
+        }),
+      );
+    });
   });
 });

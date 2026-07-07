@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,6 +30,7 @@ import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import { studentService } from '../../services/students';
 import { attendanceService } from '../../services/attendance';
+import { useMutation } from '@tanstack/react-query';
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,15 @@ export default function StudentDetail() {
     queryKey: ['student', id],
     queryFn: () => studentService.getById(id!),
     enabled: !!id,
+  });
+
+  const queryClient = useQueryClient();
+
+  const regenerateQrMutation = useMutation({
+    mutationFn: () => studentService.regenerateQR(id!),
+    onSuccess: () => {
+      refetchStudent();
+    },
   });
 
   const { data: attendanceData, isLoading: attendanceLoading } = useQuery({
@@ -155,6 +165,18 @@ export default function StudentDetail() {
                 <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-all', textAlign: 'center' }}>
                   {student.qrToken ?? '-'}
                 </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Expires: {student.qrExpiresAt ? new Date(student.qrExpiresAt).toLocaleDateString() : 'N/A'}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => regenerateQrMutation.mutate()}
+                  disabled={regenerateQrMutation.isPending}
+                  startIcon={<Refresh />}
+                >
+                  {regenerateQrMutation.isPending ? 'Reissuing...' : 'Reissue QR'}
+                </Button>
               </Box>
             </CardContent>
           </Card>

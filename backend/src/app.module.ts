@@ -21,6 +21,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { HardwareModule } from './modules/hardware/hardware.module';
 import { QRModule } from './modules/qr/qr.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
+import { PendingStudentsModule } from './modules/pending-students/pending-students.module';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
@@ -70,6 +71,7 @@ import configuration from './config/configuration';
     HardwareModule,
     QRModule,
     IncidentsModule,
+    PendingStudentsModule,
     AssignmentsModule,
     HealthModule,
     AuditModule,

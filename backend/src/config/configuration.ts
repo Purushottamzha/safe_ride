@@ -39,5 +39,7 @@ export default () => ({
     gpsPollIntervalMs: 5000,
     cameraEnabled: false,
     faceVerificationEnabled: false,
+    deviceApiKey: process.env.DEVICE_API_KEY || 'saferide-demo-device-key-2024',
+    deviceMode: process.env.DEVICE_MODE || 'webcam-demo',
   },
 });

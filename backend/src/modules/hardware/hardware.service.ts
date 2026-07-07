@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import {
   GPSData,
@@ -326,5 +326,40 @@ export class HardwareService
 
   getRegisteredDevices(): HardwareDevice[] {
     return Array.from(this.devices.values());
+  }
+
+  async findActiveTripForBus(busId: string) {
+    const trip = await this.prisma.trip.findFirst({
+      where: {
+        busId,
+        status: { in: ['ACTIVE', 'DRIVING_TO_PICKUP', 'AT_STOP', 'BOARDING', 'DRIVING_TO_SCHOOL', 'SCHOOL_ARRIVED', 'DRIVING_TO_DROP', 'DROPPING'] },
+        deletedAt: null,
+      },
+      orderBy: { scheduledAt: 'desc' },
+    });
+    if (!trip) throw new NotFoundException('No active trip found for this bus');
+    return trip;
+  }
+
+  async getTripById(tripId: string) {
+    const trip = await this.prisma.trip.findFirst({
+      where: { id: tripId, deletedAt: null },
+    });
+    if (!trip) throw new NotFoundException('Trip not found');
+    return trip;
+  }
+
+  determineScanType(trip: { status: string; type: string }): 'BOARD_IN' | 'EXIT_OUT' {
+    const boardInStatuses = ['ACTIVE', 'DRIVING_TO_PICKUP', 'AT_STOP', 'BOARDING', 'DRIVING_TO_SCHOOL'];
+    const exitOutStatuses = ['SCHOOL_ARRIVED', 'DRIVING_TO_DROP', 'DROPPING'];
+
+    if (boardInStatuses.includes(trip.status)) return 'BOARD_IN';
+    if (exitOutStatuses.includes(trip.status)) return 'EXIT_OUT';
+
+    if (trip.status === 'COMPLETED') {
+      throw new BadRequestException('Trip is already completed');
+    }
+
+    return trip.type === 'MORNING' ? 'BOARD_IN' : 'EXIT_OUT';
   }
 }

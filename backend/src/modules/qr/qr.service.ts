@@ -117,7 +117,19 @@ export class QRService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    let isLate = false;
+    let lateMinutes = 0;
+
     if (data.scanType === 'BOARD_IN') {
+      const scheduledMin = trip.scheduledAt.getHours() * 60 + trip.scheduledAt.getMinutes();
+      const boardMin = new Date().getHours() * 60 + new Date().getMinutes();
+      if (boardMin > scheduledMin + 5) {
+        isLate = true;
+        lateMinutes = boardMin - scheduledMin;
+      }
+
+      const finalStatus: 'PRESENT' | 'LATE' = isLate ? 'LATE' : 'PRESENT';
+
       await this.prisma.attendance.upsert({
         where: {
           studentId_schoolId_date_type: {
@@ -130,7 +142,9 @@ export class QRService {
         update: {
           boardTime: new Date(),
           boardEventId: tripEvent.id,
-          status: 'PRESENT',
+          isLate,
+          lateMinutes,
+          status: finalStatus,
           tripId: data.tripId,
         },
         create: {
@@ -141,7 +155,9 @@ export class QRService {
           type: trip.type,
           boardTime: new Date(),
           boardEventId: tripEvent.id,
-          status: 'PRESENT',
+          isLate,
+          lateMinutes,
+          status: finalStatus,
         },
       });
     } else if (data.scanType === 'EXIT_OUT') {
@@ -157,27 +173,11 @@ export class QRService {
       });
 
       if (attendance) {
-        let isLate = false;
-        let lateMinutes = 0;
-        if (attendance.boardTime) {
-          const scheduledMin = trip.scheduledAt.getHours() * 60 + trip.scheduledAt.getMinutes();
-          const boardMin = attendance.boardTime.getHours() * 60 + attendance.boardTime.getMinutes();
-          if (boardMin > scheduledMin + 5) {
-            isLate = true;
-            lateMinutes = boardMin - scheduledMin;
-          }
-        }
-
-        const finalStatus: 'PRESENT' | 'LATE' = isLate ? 'LATE' : 'PRESENT';
-
         await this.prisma.attendance.update({
           where: { id: attendance.id },
           data: {
             exitTime: new Date(),
             exitEventId: tripEvent.id,
-            isLate,
-            lateMinutes,
-            status: finalStatus,
             tripId: data.tripId,
           },
         });
@@ -225,6 +225,7 @@ export class QRService {
       await this.notificationRules.handleStudentBoarded({
         studentId: data.studentId, studentName, parentUserIds,
         tripId: data.tripId, schoolId: trip.schoolId,
+        isLate, lateMinutes,
       });
     } else {
       await this.notificationRules.handleStudentExited({

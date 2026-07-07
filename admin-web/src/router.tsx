@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import StudentList from './pages/Students/StudentList';
 import StudentCreate from './pages/Students/StudentCreate';
 import StudentDetail from './pages/Students/StudentDetail';
+import PendingApprovals from './pages/Students/PendingApprovals';
 import DriverList from './pages/Drivers/DriverList';
 import DriverCreate from './pages/Drivers/DriverCreate';
 import BusList from './pages/Buses/BusList';
@@ -26,6 +27,7 @@ import AnalyticsPage from './pages/Analytics/AnalyticsPage';
 import MaintenancePage from './pages/Maintenance/MaintenancePage';
 import DriverSafetyPage from './pages/DriverSafety/DriverSafetyPage';
 import NotFound from './pages/NotFound';
+import GateScanner from './pages/GateScanner';
 
 export function createRouter(isAuthenticated: boolean) {
   return createBrowserRouter([
@@ -42,6 +44,7 @@ export function createRouter(isAuthenticated: boolean) {
         { path: 'students', element: <StudentList /> },
         { path: 'students/new', element: <StudentCreate /> },
         { path: 'students/:id', element: <StudentDetail /> },
+        { path: 'students/pending-approvals', element: <PendingApprovals /> },
         { path: 'drivers', element: <DriverList /> },
         { path: 'drivers/new', element: <DriverCreate /> },
         { path: 'buses', element: <BusList /> },
@@ -62,6 +65,7 @@ export function createRouter(isAuthenticated: boolean) {
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'maintenance', element: <MaintenancePage /> },
         { path: 'driver-safety', element: <DriverSafetyPage /> },
+        { path: 'gate-scanner', element: <GateScanner /> },
       ],
     },
     {

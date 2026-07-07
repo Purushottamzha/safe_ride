@@ -105,7 +105,7 @@ export class StudentsService {
     const studentId = `STU-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
     const qrToken = crypto.randomBytes(32).toString('hex');
-    const qrExpiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const qrExpiresAt = this.calculateTermEndDate();
 
     return this.prisma.student.create({
       data: {
@@ -147,13 +147,19 @@ export class StudentsService {
     if (!student) throw new NotFoundException('Student not found');
 
     const qrToken = crypto.randomBytes(32).toString('hex');
-    const qrExpiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const qrExpiresAt = this.calculateTermEndDate();
 
     return this.prisma.student.update({
       where: { id },
       data: { qrToken, qrExpiresAt },
       select: { id: true, studentId: true, qrToken: true, qrExpiresAt: true },
     });
+  }
+
+  private calculateTermEndDate(): Date {
+    const now = new Date();
+    const year = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+    return new Date(year, 5, 30, 23, 59, 59);
   }
 
   async softDelete(id: string): Promise<void> {

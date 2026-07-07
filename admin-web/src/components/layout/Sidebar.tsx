@@ -29,6 +29,8 @@ import {
   PeopleAlt as UsersIcon,
   Build as MaintenanceIcon,
   VerifiedUser as SafetyIcon,
+  PendingActions as PendingApprovalsIcon,
+  QrCodeScanner as GateScannerIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
@@ -49,6 +51,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
   { label: 'Students', path: '/students', icon: <StudentsIcon /> },
+  { label: 'Pending Approvals', path: '/students/pending-approvals', icon: <PendingApprovalsIcon /> },
   { label: 'Drivers', path: '/drivers', icon: <DriversIcon /> },
   { label: 'Buses', path: '/buses', icon: <BusesIcon /> },
   { label: 'Routes', path: '/routes', icon: <RoutesIcon /> },
@@ -62,6 +65,7 @@ const navItems: NavItem[] = [
   { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
   { label: 'Maintenance', path: '/maintenance', icon: <MaintenanceIcon /> },
   { label: 'Driver Safety', path: '/driver-safety', icon: <SafetyIcon /> },
+  { label: 'Gate Scanner', path: '/gate-scanner', icon: <GateScannerIcon /> },
   { label: 'Schools', path: '/schools', icon: <SchoolsIcon />, adminOnly: true },
   { label: 'Users', path: '/users', icon: <UsersIcon />, adminOnly: true },
 ];

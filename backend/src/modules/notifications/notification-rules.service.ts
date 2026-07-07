@@ -21,6 +21,8 @@ interface StudentEventPayload {
   parentUserIds: string[];
   tripId: string;
   schoolId: string;
+  isLate?: boolean;
+  lateMinutes?: number;
 }
 
 interface BusProximityPayload {
@@ -82,13 +84,14 @@ export class NotificationRulesService {
     );
 
     for (const userId of enabledUsers) {
-      const body = `${payload.studentName} has boarded the bus.`;
+      const lateSuffix = payload.isLate ? ` (${payload.lateMinutes} min late)` : '';
+      const body = `${payload.studentName} has boarded the bus.${lateSuffix}`;
       await this.deliver(userId, payload.schoolId, {
         type: NotificationType.ATTENDANCE,
-        title: 'Student Boarded',
+        title: payload.isLate ? 'Student Boarded (Late)' : 'Student Boarded',
         body,
         eventType: 'STUDENT_BOARDED',
-        data: { studentId: payload.studentId, studentName: payload.studentName, tripId: payload.tripId },
+        data: { studentId: payload.studentId, studentName: payload.studentName, tripId: payload.tripId, isLate: payload.isLate, lateMinutes: payload.lateMinutes },
       });
     }
   }

@@ -57,6 +57,7 @@ export interface Student {
   dateOfBirth: string;
   qrToken?: string;
   qrExpiresAt?: string;
+  qrCode?: string;
   profilePicture?: string;
   address: string;
   phone?: string;
