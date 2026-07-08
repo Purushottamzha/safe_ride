@@ -15,7 +15,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-RUN addgroup --system --gid 1001 nodejs && \
+RUN apk add --no-cache mosquitto-clients && \
+    addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
 
 COPY --from=builder /app/node_modules ./node_modules

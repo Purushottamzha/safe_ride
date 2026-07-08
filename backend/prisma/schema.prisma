@@ -810,6 +810,27 @@ model TripWaypoint {
   @@map("trip_waypoints")
 }
 
+model RawLocation {
+  id              String    @id @default(uuid())
+  eventId         String    @unique
+  schoolId        String
+  busId           String
+  deviceId        String?
+  latitude        Float
+  longitude       Float
+  speed           Float?
+  accuracy        Float?
+  heading         Float?
+  deviceTimestamp DateTime?
+  receivedAt      DateTime  @default(now())
+  deletedAt       DateTime?
+
+  @@index([schoolId, busId])
+  @@index([receivedAt])
+  @@index([eventId])
+  @@map("raw_locations")
+}
+
 model AuditLog {
   id        String   @id @default(uuid())
   action    String

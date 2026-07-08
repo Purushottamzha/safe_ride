@@ -35,6 +35,16 @@ export default () => ({
     signatureAlgorithm: 'HS256',
   },
 
+  mqtt: {
+    url: process.env.MQTT_URL || 'mqtt://mosquitto:1883',
+    username: process.env.MQTT_USERNAME || 'saferide-backend',
+    password: process.env.MQTT_PASSWORD || 'saferide-mqtt-backend-2024',
+  },
+
+  osrm: {
+    url: process.env.OSRM_URL || 'http://osrm:5000',
+  },
+
   hardware: {
     gpsPollIntervalMs: 5000,
     cameraEnabled: false,

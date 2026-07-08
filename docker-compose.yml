@@ -60,6 +60,87 @@ services:
           memory: 256M
           cpus: "0.5"
 
+  mosquitto:
+    build:
+      context: ./docker/mosquitto
+      dockerfile: Dockerfile
+    container_name: saferide-mosquitto
+    <<: *restart-policy
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+      - mosquitto-auth:/mosquitto/auth
+      - ./docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    environment:
+      MOSQUITTO_PASSWORD: ${MOSQUITTO_PASSWORD:?MOSQUITTO_PASSWORD is required}
+      MQTT_USERNAME: ${MQTT_USERNAME:-saferide-backend}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 5 mosquitto_sub -t '$$SYS/broker/version' -u saferide-health -P ${MOSQUITTO_PASSWORD} -C 1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+        reservations:
+          memory: 64M
+
+  osrm:
+    image: osrm/osrm-backend:v5.27.1
+    container_name: saferide-osrm
+    <<: *restart-policy
+    ports:
+      - "5000:5000"
+    volumes:
+      - osrm-data:/data
+    command: osrm-routed --algorithm mld /data/nepal-latest.osrm
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: saferide-uptime-kuma
+    <<: *restart-policy
+    ports:
+      - "3001:3001"
+    volumes:
+      - uptime-kuma-data:/app/data
+    networks:
+      - frontend
+      - backend
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 128M
+
   backend:
     build:
       context: ./backend
@@ -80,13 +161,20 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:3000}
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      MQTT_URL: ${MQTT_URL:-mqtt://mosquitto:1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-saferide-backend}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:?MQTT_PASSWORD is required}
+      OSRM_URL: ${OSRM_URL:-http://osrm:5000}
     volumes:
+      - mosquitto-auth:/mosquitto-auth
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mosquitto:
         condition: service_healthy
     networks:
       - backend
@@ -145,6 +233,11 @@ services:
 volumes:
   pgdata:
   redis-data:
+  mosquitto-data:
+  mosquitto-log:
+  mosquitto-auth:
+  osrm-data:
+  uptime-kuma-data:
 
 networks:
   backend:
