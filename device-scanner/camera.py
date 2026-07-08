@@ -3,12 +3,21 @@ SafeRide Nepal — QR Scan Loop
 
 Captures photos via termux-camera-photo (Android Camera2 API through
 Termux:API — the only reliable camera path on non-rooted Termux),
-decodes QR codes with pyzbar, writes to local SQLite, and provides
-haptic feedback on successful scan.
+decodes QR codes with the zbarimg CLI (from the `zbar` package),
+writes to local SQLite, and provides haptic feedback on successful scan.
 
 IMPORTANT: On non-rooted Android, OpenCV VideoCapture(0) does NOT
 work — Android does not expose the camera as a V4L2 device in Termux.
 termux-camera-photo is the primary path, not a fallback.
+
+DEPENDENCY NOTE: This version avoids opencv-python / opencv-python-headless.
+PyPI's OpenCV wheels are built against glibc (manylinux) and are
+incompatible with Termux's Bionic libc — pip falls back to a source
+build that fails on Termux. Termux's own `pkg install opencv-python`
+package has also been reported stale/broken. Since the only thing OpenCV
+was doing was loading a JPEG into a numpy array for pyzbar, we skip
+that entirely and decode straight from the JPEG file with the `zbarimg`
+CLI tool, which ships with the `zbar` package (pkg install zbar).
 
 Latency expectation: each capture-decode cycle takes ~1-3 seconds.
 Design the debounce window and student experience around this.
@@ -23,10 +32,6 @@ import tempfile
 import time
 import threading
 from pathlib import Path
-
-import cv2
-import numpy as np
-from pyzbar.pyzbar import decode as qr_decode, ZBarSymbol
 
 from config import Config
 from database import ScannerDB
@@ -46,7 +51,7 @@ class CameraScanner:
         self._running = True
         self._thread = threading.Thread(target=self._loop, name="camera-scan", daemon=True)
         self._thread.start()
-        print("[CAMERA] Scan loop started (primary path: termux-camera-photo)")
+        print("[CAMERA] Scan loop started (primary path: termux-camera-photo + zbarimg)")
 
     def stop(self) -> None:
         self._running = False
@@ -77,10 +82,10 @@ class CameraScanner:
         except Exception:
             pass
 
-    def _capture_photo(self) -> np.ndarray | None:
-        """Capture a single photo via termux-camera-photo.
-        This is the primary (and usually only working) camera path
-        on non-rooted Termux."""
+    def _capture_photo(self) -> str | None:
+        """Capture a single photo via termux-camera-photo and return the
+        path to the saved JPEG. This is the primary (and usually only
+        working) camera path on non-rooted Termux."""
         try:
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                 tmp_path = tmp.name
@@ -93,11 +98,11 @@ class CameraScanner:
                 print(f"[CAMERA] termux-camera-photo exited {result.returncode}: {result.stderr.decode(errors='replace').strip()}")
                 Path(tmp_path).unlink(missing_ok=True)
                 return None
-            frame = cv2.imread(tmp_path)
-            Path(tmp_path).unlink(missing_ok=True)
-            if frame is None:
-                print("[CAMERA] termux-camera-photo produced an unreadable image")
-            return frame
+            if not Path(tmp_path).exists() or Path(tmp_path).stat().st_size == 0:
+                print("[CAMERA] termux-camera-photo produced an empty/missing file")
+                Path(tmp_path).unlink(missing_ok=True)
+                return None
+            return tmp_path
         except subprocess.TimeoutExpired:
             print("[CAMERA] termux-camera-photo timed out")
             Path(tmp_path).unlink(missing_ok=True)
@@ -109,17 +114,31 @@ class CameraScanner:
             print(f"[CAMERA] termux-camera-photo error: {exc}")
             return None
 
-    def _decode_qr(self, frame: np.ndarray) -> list[str]:
-        """Decode QR codes from an image frame."""
+    def _decode_qr(self, jpg_path: str) -> list[str]:
+        """Decode QR codes directly from a JPEG file using the zbarimg
+        CLI (part of the `zbar` package). No numpy/OpenCV involved."""
         tokens: list[str] = []
         try:
-            decoded = qr_decode(frame, symbols=[ZBarSymbol.QRCODE])
-            for obj in decoded:
-                token = obj.data.decode("utf-8").strip()
+            result = subprocess.run(
+                ["zbarimg", "--raw", "-q", jpg_path],
+                timeout=5,
+                capture_output=True,
+                text=True,
+            )
+            # zbarimg exits 4 when no barcode is found — not an error for us
+            if result.returncode not in (0, 4):
+                print(f"[CAMERA] zbarimg exited {result.returncode}: {result.stderr.strip()}")
+                return tokens
+            for line in result.stdout.splitlines():
+                token = line.strip()
                 if token:
                     tokens.append(token)
+        except subprocess.TimeoutExpired:
+            print("[CAMERA] zbarimg timed out")
+        except FileNotFoundError:
+            print("[CAMERA] zbarimg not found — install the `zbar` package (pkg install zbar)")
         except Exception as exc:
-            print(f"[CAMERA] QR decode error: {exc}")
+            print(f"[CAMERA] zbarimg decode error: {exc}")
         return tokens
 
     def _get_current_location(self) -> tuple[float | None, float | None]:
@@ -141,13 +160,16 @@ class CameraScanner:
 
     def _loop(self) -> None:
         while self._running:
-            frame = self._capture_photo()
-            if frame is None:
+            jpg_path = self._capture_photo()
+            if jpg_path is None:
                 # Photo capture failed — wait before retrying
                 time.sleep(1)
                 continue
 
-            tokens = self._decode_qr(frame)
+            try:
+                tokens = self._decode_qr(jpg_path)
+            finally:
+                Path(jpg_path).unlink(missing_ok=True)
 
             for token in tokens:
                 if self._is_debounced(token):

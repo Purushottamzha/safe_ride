@@ -28,19 +28,30 @@ echo "[1/5] Granting storage permissions..."
 termux-setup-storage 2>/dev/null || true
 
 # Step 2: Install system packages
+# zbar provides both libzbar.so and the zbarimg CLI (used by camera.py).
+# We do NOT install opencv-python-headless: PyPI's wheels are built
+# against glibc (manylinux) and are incompatible with Termux's Bionic
+# libc, so pip falls back to a source build that fails on Termux. The
+# Termux opencv-python pkg is also stale/broken. camera.py avoids the
+# whole problem by shelling out to zbarimg instead.
 echo ""
 echo "[2/5] Installing system packages..."
 pkg update -y
 pkg upgrade -y
-pkg install -y python termux-api opencv-python-headless 2>/dev/null || {
-    # Fallback if opencv-python-headless isn't in the default repo
-    pip install opencv-python-headless
-}
+pkg install -y python termux-api zbar
+
+# Verify zbarimg is on PATH
+if ! command -v zbarimg >/dev/null 2>&1; then
+    echo "ERROR: zbarimg not found after installing zbar. QR scanning will not work."
+    echo "Try: pkg install zbar-tools"
+    exit 1
+fi
 
 # Step 3: Install Python dependencies
+# pyzbar is intentionally NOT listed here — QR decoding uses zbarimg CLI.
 echo ""
 echo "[3/5] Installing Python dependencies..."
-pip install paho-mqtt pyzbar
+pip install paho-mqtt
 
 # Step 4: Copy scanner files
 echo ""

@@ -1,3 +1,5 @@
 paho-mqtt>=1.6.1,<2
-opencv-python-headless>=4.8.0
-pyzbar>=0.1.9
+
+# NOTE: opencv-python-headless and pyzbar are intentionally omitted.
+# QR decoding shells out to the `zbarimg` CLI (from the Termux `zbar`
+# package) instead of using Python image libraries — see camera.py.

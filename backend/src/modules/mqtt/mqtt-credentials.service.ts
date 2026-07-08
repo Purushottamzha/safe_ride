@@ -72,7 +72,7 @@ export class MqttCredentialsService {
     );
     try {
       execSync(
-        `mosquitto_passwd -b "${tmpFile}" "${username}" "${password}"`,
+        `mosquitto_passwd -b -c "${tmpFile}" "${username}" "${password}"`,
         { stdio: 'pipe', timeout: 5000 },
       );
       const content = fs.readFileSync(tmpFile, 'utf-8');
