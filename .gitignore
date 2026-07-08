@@ -20,3 +20,8 @@ Thumbs.db
 *.iml
 pgdata/
 redis-data/
+
+# Device-scanner local config (contains MQTT credentials — never commit)
+config.json
+scanner.db
+

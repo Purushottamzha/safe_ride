@@ -31,23 +31,30 @@ export class RetentionService {
     cutoff.setDate(cutoff.getDate() - this.GPS_RETENTION_DAYS);
 
     let totalDeleted = 0;
-    let batch: number;
+    let ids: string[];
 
     do {
-      batch = await this.prisma.rawLocation.updateMany({
-        where: {
-          receivedAt: { lt: cutoff },
-          deletedAt: null,
-        },
-        data: {
-          deletedAt: new Date(),
-        },
-        take: this.BATCH_SIZE,
+      ids = (
+        await this.prisma.rawLocation.findMany({
+          where: {
+            receivedAt: { lt: cutoff },
+            deletedAt: null,
+          },
+          select: { id: true },
+          take: this.BATCH_SIZE,
+        })
+      ).map((r) => r.id);
+
+      if (ids.length === 0) break;
+
+      const result = await this.prisma.rawLocation.updateMany({
+        where: { id: { in: ids } },
+        data: { deletedAt: new Date() },
       });
 
-      totalDeleted += batch.count;
-      this.logger.debug(`Soft-deleted ${batch.count} RawLocation rows (running total: ${totalDeleted})`);
-    } while (batch.count === this.BATCH_SIZE);
+      totalDeleted += result.count;
+      this.logger.debug(`Soft-deleted ${result.count} RawLocation rows (running total: ${totalDeleted})`);
+    } while (ids.length === this.BATCH_SIZE);
 
     this.logger.log(`Soft-deleted ${totalDeleted} RawLocation rows older than ${this.GPS_RETENTION_DAYS} days`);
   }
@@ -57,19 +64,26 @@ export class RetentionService {
     cutoff.setDate(cutoff.getDate() - this.SOFT_DELETE_GRACE_DAYS);
 
     let totalDeleted = 0;
-    let batch: { count: number };
+    let ids: string[];
 
     do {
-      batch = await this.prisma.rawLocation.deleteMany({
-        where: {
-          deletedAt: { lt: cutoff },
-        },
-        take: this.BATCH_SIZE,
+      ids = (
+        await this.prisma.rawLocation.findMany({
+          where: { deletedAt: { lt: cutoff } },
+          select: { id: true },
+          take: this.BATCH_SIZE,
+        })
+      ).map((r) => r.id);
+
+      if (ids.length === 0) break;
+
+      const result = await this.prisma.rawLocation.deleteMany({
+        where: { id: { in: ids } },
       });
 
-      totalDeleted += batch.count;
-      this.logger.debug(`Hard-deleted ${batch.count} stale RawLocation rows (running total: ${totalDeleted})`);
-    } while (batch.count === this.BATCH_SIZE);
+      totalDeleted += result.count;
+      this.logger.debug(`Hard-deleted ${result.count} stale RawLocation rows (running total: ${totalDeleted})`);
+    } while (ids.length === this.BATCH_SIZE);
 
     this.logger.log(`Hard-deleted ${totalDeleted} stale RawLocation rows past grace period`);
   }

@@ -1,0 +1,25 @@
+{
+  "_comment": "SafeRide Nepal — Door-Scanner Device Configuration",
+  "_comment_security": "This file contains MQTT credentials. chmod 600 after editing.",
+
+  "device_id": "REPLACE_WITH_DEVICE_UUID",
+  "school_id": "REPLACE_WITH_SCHOOL_UUID",
+  "bus_id": "REPLACE_WITH_BUS_UUID",
+
+  "mqtt": {
+    "host": "REPLACE_WITH_BROKER_IP_OR_HOSTNAME",
+    "port": 1883,
+    "username": "REPLACE_WITH_MQTT_USERNAME",
+    "password": "REPLACE_WITH_MQTT_PASSWORD"
+  },
+
+  "_optional": {
+    "gps_interval_seconds": 10,
+    "sync_interval_seconds": 15,
+    "heartbeat_interval_seconds": 60,
+    "scan_debounce_seconds": 10,
+    "camera_device": 0,
+    "camera_preview": false,
+    "db_path": "~/.saferide/scanner.db"
+  }
+}
