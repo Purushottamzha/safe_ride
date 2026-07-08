@@ -1,0 +1,3 @@
+class MonitorGpsUseCase {
+  void execute() {}
+}

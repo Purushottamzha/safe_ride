@@ -1,0 +1,3 @@
+class ProcessScanUseCase {
+  void execute() {}
+}

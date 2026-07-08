@@ -1,0 +1,3 @@
+class PurgeOldDataUseCase {
+  void execute() {}
+}

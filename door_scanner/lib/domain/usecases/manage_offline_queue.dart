@@ -1,0 +1,3 @@
+class ManageOfflineQueueUseCase {
+  void execute() {}
+}

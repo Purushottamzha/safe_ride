@@ -1,0 +1,3 @@
+class PublishHeartbeatUseCase {
+  void execute() {}
+}

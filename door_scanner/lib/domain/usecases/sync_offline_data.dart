@@ -1,0 +1,3 @@
+class SyncOfflineDataUseCase {
+  void execute() {}
+}
