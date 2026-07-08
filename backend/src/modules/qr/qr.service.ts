@@ -45,6 +45,7 @@ export class QRService {
     scanType: ScanType;
     latitude?: number;
     longitude?: number;
+    eventId?: string;
   }) {
     const student = await this.prisma.student.findFirst({
       where: { id: data.studentId, deletedAt: null, isActive: true },
@@ -76,6 +77,15 @@ export class QRService {
       }
     }
 
+    if (data.eventId) {
+      const existingByEventId = await this.prisma.tripEvent.findUnique({
+        where: { eventId: data.eventId },
+      });
+      if (existingByEventId) {
+        throw new ConflictException(`Event ${data.eventId} has already been processed`);
+      }
+    }
+
     const duplicate = await this.prisma.tripEvent.findFirst({
       where: {
         tripId: data.tripId,
@@ -96,6 +106,7 @@ export class QRService {
         scanType: data.scanType,
         latitude: data.latitude,
         longitude: data.longitude,
+        eventId: data.eventId,
       },
       include: {
         student: {

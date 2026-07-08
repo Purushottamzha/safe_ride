@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import {
   GPSData,
@@ -42,11 +43,53 @@ export class HardwareService
   private trackingIntervals: Map<string, NodeJS.Timeout> = new Map();
   private devices: Map<string, HardwareDevice> = new Map();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+  ) {}
+
+  private isProduction(): boolean {
+    return this.configService.get<string>('hardware.deviceMode') === 'production';
+  }
 
   async getCurrentLocation(busId: string): Promise<GPSData> {
     const bus = await this.prisma.bus.findFirst({ where: { id: busId, deletedAt: null } });
     if (!bus) throw new NotFoundException('Bus not found');
+
+    if (this.isProduction()) {
+      const raw = await this.prisma.rawLocation.findFirst({
+        where: { busId },
+        orderBy: { receivedAt: 'desc' },
+      });
+
+      if (raw) {
+        return {
+          busId,
+          latitude: raw.latitude,
+          longitude: raw.longitude,
+          speed: raw.speed || 0,
+          heading: raw.heading || 0,
+          timestamp: raw.receivedAt,
+          accuracy: raw.accuracy || 10,
+          altitude: 1400,
+        };
+      }
+
+      if (bus.lastGpsLat !== null && bus.lastGpsLng !== null) {
+        return {
+          busId,
+          latitude: bus.lastGpsLat,
+          longitude: bus.lastGpsLng,
+          speed: 0,
+          heading: 0,
+          timestamp: bus.lastGpsUpdate || new Date(),
+          accuracy: 10,
+          altitude: 1400,
+        };
+      }
+
+      throw new NotFoundException(`No GPS data available for bus ${busId}`);
+    }
 
     const baseLat = bus.lastGpsLat || KATHMANDU_LAT;
     const baseLng = bus.lastGpsLng || KATHMANDU_LNG;
@@ -64,6 +107,10 @@ export class HardwareService
   }
 
   async startTracking(busId: string, intervalMs: number): Promise<void> {
+    if (this.isProduction()) {
+      throw new BadRequestException('Cannot start dummy tracking in production mode');
+    }
+
     if (this.trackingIntervals.has(busId)) {
       this.logger.warn(`Bus ${busId} is already being tracked. Restarting...`);
       await this.stopTracking(busId);

@@ -41,8 +41,8 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       this.client = connect(this.mqttUrl, {
         username: this.mqttUsername,
         password: this.mqttPassword,
-        clientId: `saferide-backend-${Math.random().toString(36).substring(2, 10)}`,
-        clean: true,
+        clientId: 'saferide-backend',
+        clean: false,
         reconnectPeriod: 5000,
         connectTimeout: 10000,
         will: {
@@ -213,6 +213,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         scanType,
         latitude: lat,
         longitude: lng,
+        eventId,
       });
       this.logger.log(`Scan processed successfully: eventId=${eventId}, student=${student.id}, trip=${tripId}, type=${scanType}`);
     } catch (err: unknown) {

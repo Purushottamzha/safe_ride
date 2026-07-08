@@ -594,6 +594,7 @@ model Trip {
 
 model TripEvent {
   id             String             @id @default(uuid())
+  eventId        String?            @unique
   tripId         String
   trip           Trip               @relation(fields: [tripId], references: [id], onDelete: Cascade)
   studentId      String?
