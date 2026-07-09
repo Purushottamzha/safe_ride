@@ -8,6 +8,7 @@ import '../screens/setup/setup_screen.dart';
 import '../screens/trip/trip_screen.dart';
 import '../screens/map/map_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/diagnostics/diagnostics_screen.dart';
 import '../../application/notifiers/auth_notifier.dart';
 import '../../application/notifiers/device_notifier.dart';
 import '../../application/providers/auth_provider.dart';
@@ -58,6 +59,7 @@ class AppRouter {
       GoRoute(path: '/trip', name: 'trip', builder: (context, state) => const TripScreen(),
         routes: [GoRoute(path: ':tripId', name: 'tripDetail', builder: (context, state) => TripScreen(tripId: state.pathParameters['tripId']))]),
       GoRoute(path: '/map', name: 'map', builder: (context, state) => const MapScreen()),
+      GoRoute(path: '/diagnostics', name: 'diagnostics', builder: (context, state) => const DiagnosticsScreen()),
     ],
   );
 }

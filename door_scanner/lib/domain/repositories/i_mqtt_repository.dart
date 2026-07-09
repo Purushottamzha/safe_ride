@@ -1,6 +1,8 @@
+import '../entities/mqtt_connection_state.dart';
+
 abstract class IMqttRepository {
   Future<bool> connect();
-  Future<void> disconnect();
+  void disconnect();
   Future<bool> publish(String topic, String payload);
-  Stream<Object> get connectionState;
+  Stream<MqttConnectionState> get connectionState;
 }

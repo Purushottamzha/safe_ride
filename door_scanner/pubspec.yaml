@@ -18,13 +18,16 @@ dependencies:
   mqtt_client: ^10.5.1
   dio: ^5.7.0
   mobile_scanner: ^6.0.2
+  app_settings: ^5.1.1
   geolocator: ^13.0.2
   battery_plus: ^6.2.1
   connectivity_plus: ^6.1.2
   wakelock_plus: ^1.2.10
   uuid: ^4.5.1
+  path: ^1.9.0
   path_provider: ^2.1.5
   flutter_map: ^7.0.2
+  latlong2: ^0.9.1
   flutter_map_tile_caching: 10.0.0
   google_fonts: ^6.2.1
   flutter_riverpod: 2.6.1

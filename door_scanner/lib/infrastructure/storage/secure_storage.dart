@@ -57,4 +57,16 @@ class SecureStorage {
   Future<void> clearDeviceConfig() async {
     await _storage.delete(key: _deviceConfigKey);
   }
+
+  Future<String?> get(String key) async {
+    return _storage.read(key: key);
+  }
+
+  Future<void> set(String key, String value) async {
+    await _storage.write(key: key, value: value);
+  }
+
+  Future<void> remove(String key) async {
+    await _storage.delete(key: key);
+  }
 }
