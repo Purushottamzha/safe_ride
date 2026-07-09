@@ -6,6 +6,8 @@ build/
 *.log
 logs/
 *.pid
+__pycache__/
+*.py[cod]
 coverage/
 .turbo/
 .next/
@@ -24,4 +26,3 @@ redis-data/
 # Device-scanner local config (contains MQTT credentials — never commit)
 config.json
 scanner.db
-

@@ -151,18 +151,29 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const qrToken = payload.qrToken as string | undefined;
-    if (!qrToken) {
+    const rawQr = payload.qrToken as string | undefined;
+    if (!rawQr) {
       this.logger.warn(`Scan event ${eventId} missing qrToken`);
       return;
     }
 
     this.logger.log(`Processing scan: eventId=${eventId}, bus=${busId}, school=${schoolId}`);
 
-    // Step 1: Validate QR token → resolve student
+    // Step 1: Parse QR content — accept JSON {"studentId":"STU-00001"} or raw studentId
+    let studentIdValue: string;
+    try {
+      const parsed = JSON.parse(rawQr);
+      studentIdValue = parsed.studentId;
+      if (!studentIdValue) throw new Error('studentId missing in QR payload');
+    } catch {
+      // Not JSON — treat raw QR text as the studentId
+      studentIdValue = rawQr;
+    }
+
+    // Step 2: Validate studentId → resolve student
     let student: { id: string };
     try {
-      const result = await this.qrService.validateQRToken(qrToken);
+      const result = await this.qrService.validateQRToken(studentIdValue);
       student = result.student;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -170,7 +181,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    // Step 2: Resolve trip (from payload or auto-detect from busId)
+    // Step 3: Resolve trip (from payload or auto-detect from busId)
     let tripId = payload.tripId as string | undefined;
     if (!tripId) {
       try {
@@ -183,7 +194,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Step 3: Determine scan direction
+    // Step 4: Determine scan direction
     let trip: { status: string; type: string };
     try {
       trip = await this.hardwareService.getTripById(tripId);
@@ -202,7 +213,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    // Step 4: Record attendance via QRService
+    // Step 5: Record attendance via QRService
     const lat = payload.latitude ? Number(payload.latitude) : undefined;
     const lng = payload.longitude ? Number(payload.longitude) : undefined;
 

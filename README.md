@@ -1,8 +1,8 @@
 # SafeRide Nepal
 
-School Bus Management System
+School Transport Management Platform
 
-A modern, scalable, secure school transportation management system built with NestJS, React, and PostgreSQL.
+A modern, scalable, secure school transport management platform built with NestJS, React, PostgreSQL, MQTT, and open-source mapping tools.
 
 ## Architecture
 
@@ -100,6 +100,15 @@ http://localhost:3000/api/docs
 - Attendance reports and analytics
 - Responsive parent web portal
 - Professional admin dashboard
+
+## Product Scope
+
+SafeRide Nepal v1.0 is scoped as a commercial school transport platform, not only
+a QR attendance demo. See [docs/v1.0-product-scope.md](docs/v1.0-product-scope.md)
+for the 14-module roadmap, implementation sequence, digital twin principle, and
+pilot-readiness checklist.
+
+Development progress is tracked in [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md).
 
 ## Security
 

@@ -19,7 +19,7 @@ export class QRService {
 
   async validateQRToken(token: string) {
     const student = await this.prisma.student.findFirst({
-      where: { qrToken: token, deletedAt: null, isActive: true },
+      where: { studentId: token, deletedAt: null, isActive: true },
     });
     if (!student) throw new NotFoundException('Invalid QR token');
     if (student.qrExpiresAt < new Date()) {

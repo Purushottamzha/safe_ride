@@ -96,7 +96,7 @@ services:
           memory: 64M
 
   osrm:
-    image: osrm/osrm-backend:v5.27.1
+    image: osrm/osrm-backend:latest
     container_name: saferide-osrm
     <<: *restart-policy
     ports:

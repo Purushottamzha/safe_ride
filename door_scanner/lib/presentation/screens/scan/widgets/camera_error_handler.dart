@@ -183,7 +183,7 @@ class _CameraErrorHandlerState extends State<CameraErrorHandler> {
           const SizedBox(height: AppSpacing.sm),
           TextButton(
             onPressed: _retry,
-            child: Text('Retry', style: TextStyle(color: Colors.white70)),
+            child: const Text('Retry', style: TextStyle(color: Colors.white70)),
           ),
         ];
       case CameraErrorState.unsupported:

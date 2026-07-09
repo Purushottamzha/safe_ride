@@ -88,6 +88,7 @@ function StudentListItem({ student }: { student: Student }) {
 }
 
 export default function StudentsList() {
+  const navigate = useNavigate();
   const { students } = useOutletContext<OutletContext>();
 
   const { data: studentsList = [], isLoading } = useQuery({

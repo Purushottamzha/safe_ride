@@ -64,6 +64,27 @@ export interface Student {
   isActive: boolean;
   schoolId: string;
   school?: School;
+  emergencyNotes?: string;
+  parentStudents?: StudentParent[];
+  studentAssignments?: StudentAssignment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentParent {
+  studentId: string;
+  parentId: string;
+  isPrimary: boolean;
+  relation: string;
+  parent: Parent;
+  createdAt: string;
+}
+
+export interface Parent {
+  id: string;
+  userId: string;
+  user: User;
+  emergencyContact: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -261,6 +282,7 @@ export interface BusAssignment {
 export interface StudentAssignment {
   id: string;
   assignmentId: string;
+  assignment?: Assignment;
   studentId: string;
   student: Student;
   stopId?: string;

@@ -29,6 +29,7 @@ import DriverSafetyPage from './pages/DriverSafety/DriverSafetyPage';
 import NotFound from './pages/NotFound';
 import GateScanner from './pages/GateScanner';
 import DeviceList from './pages/Devices/DeviceList';
+import ControlCenter from './pages/ControlCenter/ControlCenter';
 
 export function createRouter(isAuthenticated: boolean) {
   return createBrowserRouter([
@@ -68,6 +69,7 @@ export function createRouter(isAuthenticated: boolean) {
         { path: 'driver-safety', element: <DriverSafetyPage /> },
         { path: 'devices', element: <DeviceList /> },
         { path: 'gate-scanner', element: <GateScanner /> },
+        { path: 'control-center', element: <ControlCenter /> },
       ],
     },
     {

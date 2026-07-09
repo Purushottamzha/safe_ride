@@ -46,8 +46,8 @@ class _CornerPainter extends CustomPainter {
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke;
     const length = 24.0;
-    canvas.drawLine(const Offset(0, 0), Offset(length, 0), paint);
-    canvas.drawLine(const Offset(0, 0), Offset(0, length), paint);
+    canvas.drawLine(const Offset(0, 0), const Offset(length, 0), paint);
+    canvas.drawLine(const Offset(0, 0), const Offset(0, length), paint);
     canvas.drawLine(Offset(size.width, 0), Offset(size.width - length, 0), paint);
     canvas.drawLine(Offset(size.width, 0), Offset(size.width, length), paint);
     canvas.drawLine(Offset(0, size.height), Offset(length, size.height), paint);

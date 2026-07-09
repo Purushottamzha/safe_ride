@@ -35,8 +35,16 @@ export const getMyChildren = async (): Promise<Student[]> => {
     id: c.id,
     name: c.name,
     grade: c.grade,
+    section: c.section || undefined,
+    studentId: c.studentId,
     school: c.school,
+    schoolId: c.schoolId,
     photoUrl: c.photoUrl || undefined,
+    todayStatus: c.todayStatus,
+    bus: c.bus,
+    driver: c.driver,
+    route: c.route,
+    stop: c.stop,
   }));
 };
 
@@ -46,7 +54,13 @@ export const getStudentById = async (id: string): Promise<Student> => {
     id: data.id,
     name: `${data.firstName} ${data.lastName}`,
     grade: data.grade,
+    section: data.section || undefined,
+    studentId: data.studentId,
     school: data.school?.name || '',
+    schoolId: data.schoolId,
     photoUrl: data.profilePicture || undefined,
+    bloodGroup: data.bloodGroup,
+    emergencyContact: data.phone,
+    medicalNotes: data.emergencyNotes,
   };
 };

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
+  Satellite as ControlCenterIcon,
   People as StudentsIcon,
   AirportShuttle as DriversIcon,
   DirectionsBus as BusesIcon,
@@ -51,6 +52,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+  { label: 'Control Center', path: '/control-center', icon: <ControlCenterIcon /> },
   { label: 'Students', path: '/students', icon: <StudentsIcon /> },
   { label: 'Pending Approvals', path: '/students/pending-approvals', icon: <PendingApprovalsIcon /> },
   { label: 'Drivers', path: '/drivers', icon: <DriversIcon /> },

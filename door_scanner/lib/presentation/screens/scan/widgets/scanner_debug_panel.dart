@@ -106,7 +106,7 @@ class _ScannerDebugPanelState extends State<ScannerDebugPanel> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('DEBUG', style: TextStyle(color: Colors.yellow, fontSize: 11, fontWeight: FontWeight.bold)),
+                    const Text('DEBUG', style: TextStyle(color: Colors.yellow, fontSize: 11, fontWeight: FontWeight.bold)),
                     const Divider(color: Colors.yellow, height: 8),
                     _row('Camera', CameraWrapper.instance.isRunning ? 'running' : 'stopped'),
                     _row('Init', '${CameraWrapper.instance.isInitialized}'),

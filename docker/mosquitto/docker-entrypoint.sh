@@ -109,7 +109,7 @@ topic read saferide/#
 
 # Health monitor: can read $$SYS topics
 user saferide-health
-topic read $$
+topic read $SYS/#
 
 ACLHEADER
 

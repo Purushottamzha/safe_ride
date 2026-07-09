@@ -25,7 +25,7 @@ export default function RegisterStudent() {
   const [section, setSection] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
-  const [schoolId, setSchoolId] = useState(user?.schoolId || '');
+  const [schoolId, _setSchoolId] = useState((user as any)?.schoolId || '');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);

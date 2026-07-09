@@ -10,9 +10,34 @@ export interface Student {
   id: string;
   name: string;
   grade: string;
+  section?: string;
+  studentId?: string;
   school: string;
+  schoolId?: string;
   photoUrl?: string;
   rfidCardId?: string;
+  bus?: {
+    id: string;
+    plateNumber: string;
+    busNumber: string;
+    model?: string | null;
+    color?: string | null;
+    status?: string;
+  } | null;
+  driver?: {
+    id: string;
+    name: string;
+    phone?: string | null;
+    email?: string;
+    licenseNumber?: string;
+    emergencyContact?: string | null;
+  } | null;
+  route?: { id: string; name: string } | null;
+  stop?: { id: string; name: string; address: string } | null;
+  todayStatus?: TodayStatus;
+  bloodGroup?: string;
+  emergencyContact?: string;
+  medicalNotes?: string;
 }
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'no_school' | 'unknown';

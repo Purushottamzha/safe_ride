@@ -1,6 +1,6 @@
-import { PrismaClient, UserRole, UserStatus, TripType, BusStatus, AttendanceStatus } from '@prisma/client';
-import * as argon2 from 'argon2';
-import * as crypto from 'crypto';
+const { PrismaClient, UserRole, UserStatus, TripType, BusStatus, AttendanceStatus } = require('@prisma/client');
+const argon2 = require('argon2');
+const crypto = require('crypto');
 
 const prisma = new PrismaClient();
 
@@ -101,7 +101,7 @@ const STUDENTS_DATA = [
   { firstName: 'Binod', lastName: 'Chaudhary', grade: '7', section: 'B', address: 'Baneshwor, Kathmandu', routeIdx: 0, stopIdx: 0 },
 ];
 
-async function main(): Promise<void> {
+async function main() {
   console.log('Seeding database...');
 
   const passwordHash = await argon2.hash('Admin@123456', {
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
       isEmailVerified: true,
     },
   });
-  console.log(`Created super admin: ${superAdmin.email}`);
+  console.log('Created super admin: ' + superAdmin.email);
 
   const school = await prisma.school.upsert({
     where: { code: 'SRS001' },
@@ -138,7 +138,7 @@ async function main(): Promise<void> {
       timezone: 'Asia/Kathmandu',
     },
   });
-  console.log(`Created school: ${school.name}`);
+  console.log('Created school: ' + school.name);
 
   const schoolAdmin = await prisma.user.upsert({
     where: { email: 'school@saferide.com' },
@@ -154,7 +154,7 @@ async function main(): Promise<void> {
       isEmailVerified: true,
     },
   });
-  console.log(`Created school admin: ${schoolAdmin.email}`);
+  console.log('Created school admin: ' + schoolAdmin.email);
 
   const parentUser = await prisma.user.upsert({
     where: { email: 'parent@saferide.com' },
@@ -170,7 +170,7 @@ async function main(): Promise<void> {
       isEmailVerified: true,
     },
   });
-  console.log(`Created parent user: ${parentUser.email}`);
+  console.log('Created parent user: ' + parentUser.email);
 
   await prisma.parent.upsert({
     where: { userId: parentUser.id },
@@ -204,13 +204,13 @@ async function main(): Promise<void> {
       update: {},
       create: {
         userId: user.id,
-        licenseNumber: `LIC-${crypto.randomBytes(4).toString('hex').toUpperCase()}`,
+        licenseNumber: 'LIC-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
         licenseExpiry: new Date(d.licenseExpiry),
         isAvailable: true,
         schoolId: school.id,
       },
     });
-    console.log(`Created driver: ${d.firstName} ${d.lastName}`);
+    console.log('Created driver: ' + d.firstName + ' ' + d.lastName);
   }
 
   const buses = [];
@@ -219,7 +219,12 @@ async function main(): Promise<void> {
       where: { plateNumber: b.plateNumber },
       update: {},
       create: {
-        ...b,
+        plateNumber: b.plateNumber,
+        busNumber: b.busNumber,
+        model: b.model,
+        capacity: b.capacity,
+        year: b.year,
+        color: b.color,
         status: BusStatus.ACTIVE,
         lastGpsLat: 27.68 + Math.random() * 0.04,
         lastGpsLng: 85.31 + Math.random() * 0.04,
@@ -228,11 +233,11 @@ async function main(): Promise<void> {
       },
     });
     buses.push(bus);
-    console.log(`Created bus: ${bus.plateNumber}`);
+    console.log('Created bus: ' + bus.plateNumber);
   }
 
-  const routes: any[] = [];
-  const allStops: { id: string; routeId: string }[] = [];
+  const routes = [];
+  const allStops = [];
 
   for (let ri = 0; ri < KATHMANDU_ROUTES.length; ri++) {
     const r = KATHMANDU_ROUTES[ri];
@@ -273,20 +278,20 @@ async function main(): Promise<void> {
       allStops.push({ id: stop.id, routeId: route.id });
     }
   }
-  console.log(`Created ${routes.length} routes with stops`);
+  console.log('Created ' + routes.length + ' routes with stops');
 
-  const students: any[] = [];
+  const students = [];
   for (let i = 0; i < STUDENTS_DATA.length; i++) {
     const sd = STUDENTS_DATA[i];
-    const studentId = `STU-${String(i + 1).padStart(5, '0')}`;
+    const studentId = 'STU-' + String(i + 1).padStart(5, '0');
     const student = await prisma.student.create({
       data: {
         firstName: sd.firstName,
         lastName: sd.lastName,
-        dateOfBirth: new Date(`${2013 - parseInt(sd.grade)}-06-15`),
+        dateOfBirth: new Date((2013 - parseInt(sd.grade)) + '-06-15'),
         grade: sd.grade,
         section: sd.section,
-        studentId,
+        studentId: studentId,
         qrToken: studentId,
         qrExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         address: sd.address,
@@ -295,7 +300,7 @@ async function main(): Promise<void> {
     });
     students.push(student);
   }
-  console.log(`Created ${students.length} students`);
+  console.log('Created ' + students.length + ' students');
 
   const parent = await prisma.parent.findUnique({ where: { userId: parentUser.id } });
   if (parent) {
@@ -320,7 +325,7 @@ async function main(): Promise<void> {
   for (let ri = 0; ri < routes.length; ri++) {
     const assignment = await prisma.assignment.create({
       data: {
-        name: `${KATHMANDU_ROUTES[ri].name} Assignment`,
+        name: KATHMANDU_ROUTES[ri].name + ' Assignment',
         schoolId: school.id,
         routeId: routes[ri].id,
       },
@@ -338,28 +343,27 @@ async function main(): Promise<void> {
     });
 
     const routeStudentIndices = STUDENTS_DATA
-      .map((sd, idx) => (sd.routeIdx === ri ? idx : -1))
-      .filter(idx => idx !== -1);
+      .map(function(sd, idx) { return sd.routeIdx === ri ? idx : -1; })
+      .filter(function(idx) { return idx !== -1; });
 
     for (const studentIdx of routeStudentIndices) {
       const sd = STUDENTS_DATA[studentIdx];
-      const routeStops = allStops.filter(s => s.routeId === routes[ri].id);
-      const stopId = routeStops[Math.min(sd.stopIdx, routeStops.length - 1)]?.id;
+      const routeStops = allStops.filter(function(s) { return s.routeId === routes[ri].id; });
+      const stopId = routeStops[Math.min(sd.stopIdx, routeStops.length - 1)] ? routeStops[Math.min(sd.stopIdx, routeStops.length - 1)].id : null;
       await prisma.studentAssignment.create({
         data: {
           assignmentId: assignment.id,
           studentId: students[studentIdx].id,
-          stopId: stopId || routeStops[0]?.id,
+          stopId: stopId || (routeStops[0] ? routeStops[0].id : null),
         },
       });
     }
   }
-  console.log(`Created ${assignments.length} assignments`);
+  console.log('Created ' + assignments.length + ' assignments');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const morningTrips = [];
   for (let i = 0; i < routes.length; i++) {
     const driver = drivers[i % drivers.length];
     const bus = buses[i % buses.length];
@@ -374,7 +378,6 @@ async function main(): Promise<void> {
         schoolId: school.id,
       },
     });
-    morningTrips.push(trip);
 
     const afternoonTrip = await prisma.trip.create({
       data: {
@@ -389,13 +392,13 @@ async function main(): Promise<void> {
     });
 
     const routeStudentIds = STUDENTS_DATA
-      .map((sd, idx) => (sd.routeIdx === i ? students[idx].id : null))
-      .filter(id => id !== null) as string[];
+      .map(function(sd, idx) { return sd.routeIdx === i ? students[idx].id : null; })
+      .filter(function(id) { return id !== null; });
 
     for (const studentId of routeStudentIds) {
       await prisma.attendance.create({
         data: {
-          studentId,
+          studentId: studentId,
           tripId: i === 0 ? trip.id : afternoonTrip.id,
           schoolId: school.id,
           date: today,
@@ -406,13 +409,13 @@ async function main(): Promise<void> {
       });
     }
   }
-  console.log(`Created ${morningTrips.length} morning trips`);
+  console.log('Created morning trips');
 
   const schoolLocation = { lat: 27.6855, lng: 85.3245 };
   await prisma.school.update({
     where: { id: school.id },
     data: {
-      address: `SafeRide School, ${schoolLocation.lat}, ${schoolLocation.lng}`,
+      address: 'SafeRide School, ' + schoolLocation.lat + ', ' + schoolLocation.lng,
     },
   });
 
@@ -427,10 +430,10 @@ async function main(): Promise<void> {
 }
 
 main()
-  .catch((e) => {
+  .catch(function(e) {
     console.error('Seed error:', e);
     process.exit(1);
   })
-  .finally(async () => {
+  .finally(async function() {
     await prisma.$disconnect();
   });
