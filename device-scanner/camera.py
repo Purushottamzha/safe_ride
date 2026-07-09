@@ -202,33 +202,48 @@ class CameraScanner:
     # ── Main loop ──────────────────────────────────────────────────────
 
     def _loop(self) -> None:
-        while self._running:
-            jpg_path = self._capture_photo()
-            if jpg_path is None:
-                # Photo capture failed — wait before retrying
-                time.sleep(1)
-                continue
+        try:
+            while self._running:
+                print("[CAMERA] Loop iteration")
 
-            time.sleep(0.2)
+                jpg_path = self._capture_photo()
+                print(f"[CAMERA] capture returned: {jpg_path}")
 
-            try:
-                tokens = self._decode_qr(jpg_path)
-            finally:
-                Path(jpg_path).unlink(missing_ok=True)
-
-            if not tokens:
-                time.sleep(0.5)
-                continue
-
-            for token in tokens:
-                if self._is_debounced(token):
+                if jpg_path is None:
+                    time.sleep(1)
                     continue
 
-                lat, lng = self._get_current_location()
-                event_id = self.db.insert_scan(
-                    qr_token=token,
-                    latitude=lat,
-                    longitude=lng,
-                )
-                self._vibrate()
-                print(f"[CAMERA] Scanned: token={token[:16]}... event_id={event_id}")
+                time.sleep(0.2)
+
+                try:
+                    tokens = self._decode_qr(jpg_path)
+                finally:
+                    Path(jpg_path).unlink(missing_ok=True)
+
+                if not tokens:
+                    print("[CAMERA] No QR detected")
+                    time.sleep(0.5)
+                    continue
+
+                for token in tokens:
+                    print(f"[CAMERA] QR: {token}")
+
+                    if self._is_debounced(token):
+                        print("[CAMERA] Debounced")
+                        continue
+
+                    lat, lng = self._get_current_location()
+
+                    event_id = self.db.insert_scan(
+                        qr_token=token,
+                        latitude=lat,
+                        longitude=lng,
+                    )
+
+                    self._vibrate()
+                    print(f"[CAMERA] Scan saved: {event_id}")
+
+        except Exception:
+            import traceback
+            print("[CAMERA] FATAL EXCEPTION")
+            traceback.print_exc()
