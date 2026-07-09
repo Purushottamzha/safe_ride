@@ -48,10 +48,31 @@ class CameraScanner:
         self._camera_index = config.camera_device
 
     def start(self) -> None:
+        self._check_dependencies()
         self._running = True
         self._thread = threading.Thread(target=self._loop, name="camera-scan", daemon=True)
         self._thread.start()
         print("[CAMERA] Scan loop started (primary path: termux-camera-photo + zbarimg)")
+
+    def _check_dependencies(self) -> None:
+        missing: list[str] = []
+        for cmd, hint in [
+            ("termux-camera-photo", "install termux-api (pkg install termux-api)"),
+            ("zbarimg", "install zbar (pkg install zbar)"),
+            ("termux-vibrate", "install termux-api (pkg install termux-api)"),
+            ("termux-location", "install termux-api (pkg install termux-api)"),
+        ]:
+            try:
+                result = subprocess.run([cmd, "--version"], capture_output=True, timeout=5)
+                print(f"[CAMERA] Dependency OK: {cmd} -> exit={result.returncode}")
+            except FileNotFoundError:
+                missing.append(f"{cmd} not found — {hint}")
+            except Exception as exc:
+                print(f"[CAMERA] Dependency check warning: {cmd} -> {exc}")
+        if missing:
+            for msg in missing:
+                print(f"[CAMERA] WARNING: {msg}")
+            print("[CAMERA] Continuing anyway — some features may fail at runtime.")
 
     def stop(self) -> None:
         self._running = False
@@ -85,33 +106,45 @@ class CameraScanner:
     def _capture_photo(self) -> str | None:
         """Capture a single photo via termux-camera-photo and return the
         path to the saved JPEG. This is the primary (and usually only
-        working) camera path on non-rooted Termux."""
+        working) camera path on non-rooted Termux.
+
+        Falls back to camera index 1 if the configured index fails."""
+        return self._capture_with_index(self._camera_index) or self._capture_with_index(0 if self._camera_index != 0 else 1)
+
+    def _capture_with_index(self, camera_index: int) -> str | None:
         try:
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
                 tmp_path = tmp.name
+            cmd = ["termux-camera-photo", "-c", str(camera_index), tmp_path]
             result = subprocess.run(
-                ["termux-camera-photo", "-c", str(self._camera_index), tmp_path],
-                timeout=15,
+                cmd,
+                timeout=30,
                 capture_output=True,
             )
             if result.returncode != 0:
-                print(f"[CAMERA] termux-camera-photo exited {result.returncode}: {result.stderr.decode(errors='replace').strip()}")
+                stderr = result.stderr.decode(errors="replace").strip()
+                print(f"[CAMERA] termux-camera-photo (cam={camera_index}) exited {result.returncode}")
+                if stderr:
+                    print(f"[CAMERA]   stderr: {stderr}")
                 Path(tmp_path).unlink(missing_ok=True)
                 return None
             if not Path(tmp_path).exists() or Path(tmp_path).stat().st_size == 0:
-                print("[CAMERA] termux-camera-photo produced an empty/missing file")
+                print(f"[CAMERA] termux-camera-photo (cam={camera_index}) produced an empty/missing file")
                 Path(tmp_path).unlink(missing_ok=True)
                 return None
             return tmp_path
         except subprocess.TimeoutExpired:
-            print("[CAMERA] termux-camera-photo timed out")
-            Path(tmp_path).unlink(missing_ok=True)
+            print(f"[CAMERA] termux-camera-photo (cam={camera_index}) timed out after 30s")
+            try:
+                Path(tmp_path).unlink(missing_ok=True)
+            except NameError:
+                pass
             return None
         except FileNotFoundError:
-            print("[CAMERA] termux-camera-photo not found — install termux-api")
+            print("[CAMERA] termux-camera-photo not found — install termux-api (pkg install termux-api)")
             return None
         except Exception as exc:
-            print(f"[CAMERA] termux-camera-photo error: {exc}")
+            print(f"[CAMERA] termux-camera-photo (cam={camera_index}) error: {exc}")
             return None
 
     def _decode_qr(self, jpg_path: str) -> list[str]:
@@ -119,22 +152,26 @@ class CameraScanner:
         CLI (part of the `zbar` package). No numpy/OpenCV involved."""
         tokens: list[str] = []
         try:
+            cmd = ["zbarimg", "--raw", "-q", jpg_path]
             result = subprocess.run(
-                ["zbarimg", "--raw", "-q", jpg_path],
-                timeout=5,
+                cmd,
+                timeout=10,
                 capture_output=True,
                 text=True,
             )
             # zbarimg exits 4 when no barcode is found — not an error for us
             if result.returncode not in (0, 4):
-                print(f"[CAMERA] zbarimg exited {result.returncode}: {result.stderr.strip()}")
+                stderr = result.stderr.strip()
+                print(f"[CAMERA] zbarimg exited {result.returncode} for: {jpg_path}")
+                if stderr:
+                    print(f"[CAMERA]   stderr: {stderr}")
                 return tokens
             for line in result.stdout.splitlines():
                 token = line.strip()
                 if token:
                     tokens.append(token)
         except subprocess.TimeoutExpired:
-            print("[CAMERA] zbarimg timed out")
+            print(f"[CAMERA] zbarimg timed out after 10s for: {jpg_path}")
         except FileNotFoundError:
             print("[CAMERA] zbarimg not found — install the `zbar` package (pkg install zbar)")
         except Exception as exc:
@@ -152,8 +189,14 @@ class CameraScanner:
             if result.returncode == 0:
                 data = json.loads(result.stdout)
                 return (data.get("latitude"), data.get("longitude"))
-        except Exception:
-            pass
+        except subprocess.TimeoutExpired:
+            print("[CAMERA] termux-location timed out")
+        except json.JSONDecodeError as exc:
+            print(f"[CAMERA] termux-location returned invalid JSON: {exc}")
+        except FileNotFoundError:
+            print("[CAMERA] termux-location not found — install termux-api")
+        except Exception as exc:
+            print(f"[CAMERA] termux-location error: {exc}")
         return (None, None)
 
     # ── Main loop ──────────────────────────────────────────────────────
@@ -166,10 +209,16 @@ class CameraScanner:
                 time.sleep(1)
                 continue
 
+            time.sleep(0.2)
+
             try:
                 tokens = self._decode_qr(jpg_path)
             finally:
                 Path(jpg_path).unlink(missing_ok=True)
+
+            if not tokens:
+                time.sleep(0.5)
+                continue
 
             for token in tokens:
                 if self._is_debounced(token):
