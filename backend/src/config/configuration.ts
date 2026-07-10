@@ -45,6 +45,14 @@ export default () => ({
     url: process.env.OSRM_URL || 'http://osrm:5000',
   },
 
+  email: {
+    host: process.env.SMTP_HOST || 'localhost',
+    port: parseInt(process.env.SMTP_PORT || '1025', 10),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'noreply@saferide.com.np',
+  },
+
   hardware: {
     gpsPollIntervalMs: 5000,
     cameraEnabled: false,

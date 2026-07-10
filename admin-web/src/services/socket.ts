@@ -69,6 +69,33 @@ class SocketService {
     this.socket.on('buses:all', callback);
     return () => this.socket?.off('buses:all', callback);
   }
+
+  onNotificationNew(callback: (data: NotificationPayload) => void): () => void {
+    if (!this.socket) return () => {};
+    this.socket.on('notification:new', callback);
+    return () => this.socket?.off('notification:new', callback);
+  }
+
+  onIncidentAlert(callback: (data: IncidentAlert) => void): () => void {
+    if (!this.socket) return () => {};
+    this.socket.on('incident:alert', callback);
+    return () => this.socket?.off('incident:alert', callback);
+  }
+
+  onIncidentResolved(callback: (data: { id: string; title: string; resolution: string; timestamp: string }) => void): () => void {
+    if (!this.socket) return () => {};
+    this.socket.on('incident:resolved', callback);
+    return () => this.socket?.off('incident:resolved', callback);
+  }
+}
+
+export interface NotificationPayload {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  data: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 export interface BusLocation {
@@ -91,6 +118,24 @@ export interface BusLocation {
   completedStops: number;
   tripStatus: string;
   lastUpdate: string;
+  batteryLevel?: number;
+  gpsAccuracy?: number;
+  scannerStatus?: string;
+  lastHeartbeatAt?: string;
+  firmwareVersion?: string;
+  lastQrScanAt?: string;
+}
+
+export interface IncidentAlert {
+  id: string;
+  title: string;
+  severity: string;
+  description: string;
+  latitude?: number;
+  longitude?: number;
+  busId?: string;
+  busNumber?: string;
+  timestamp: string;
 }
 
 export interface EmergencyAlert {

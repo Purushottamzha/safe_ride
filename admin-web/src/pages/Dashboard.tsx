@@ -85,6 +85,8 @@ export default function Dashboard() {
   const [busStatuses, setBusStatuses] = useState<Record<string, { status: string; routeName: string; speed: number; occupancy: number; capacity: number }>>({});
   const timelineRef = useRef<HTMLDivElement>(null);
   const eventCounter = useRef(0);
+  const updateTimestamps = useRef<number[]>([]);
+  const lastSeenRef = useRef<Record<string, number>>({});
 
   const { data: stats, isLoading, error, refetch } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -104,11 +106,14 @@ export default function Dashboard() {
     let sosCount = 0;
 
     const unsubLocation = socketService.onBusLocation((data: BusLocation) => {
+      const now = Date.now();
+      lastSeenRef.current[data.busId] = now;
+      updateTimestamps.current = [...updateTimestamps.current.filter(t => now - t < 60000), now];
+      setLiveBuses(updateTimestamps.current.length);
       setBusStatuses(prev => ({
         ...prev,
         [data.busId]: { status: data.tripStatus, routeName: data.routeName, speed: data.speed, occupancy: data.occupancy, capacity: data.capacity },
       }));
-      setLiveBuses(prev => prev + 1);
 
       eventCounter.current++;
       if (eventCounter.current % 5 === 0) {
@@ -158,6 +163,20 @@ export default function Dashboard() {
       timelineRef.current.scrollTop = 0;
     }
   }, [timeline]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const cutoff = Date.now() - 300000;
+      setBusStatuses(prev => {
+        const stale = Object.keys(prev).filter(id => (lastSeenRef.current[id] || 0) < cutoff);
+        if (stale.length === 0) return prev;
+        const next = { ...prev };
+        stale.forEach(id => { delete next[id]; });
+        return next;
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const totalStudents = stats?.totalStudents ?? 0;
   const activeDrivers = stats?.totalDrivers ?? 0;

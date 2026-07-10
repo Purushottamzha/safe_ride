@@ -2,16 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface ThemeState {
-  mode: 'light';
-  setMode: (mode: 'light') => void;
+  mode: 'light' | 'dark';
+  setMode: (mode: 'light' | 'dark') => void;
+  toggleTheme: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       mode: 'light',
-      setMode: () => set({ mode: 'light' }),
+      setMode: (mode) => set({ mode }),
+      toggleTheme: () => set({ mode: get().mode === 'light' ? 'dark' : 'light' }),
     }),
-    { name: 'saferide-theme' },
+    { name: 'saferide-parent-theme' },
   ),
 );

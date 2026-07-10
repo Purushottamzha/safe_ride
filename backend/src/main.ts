@@ -11,6 +11,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
@@ -88,6 +89,7 @@ async function bootstrap(): Promise<void> {
     .addTag('Hardware', 'Hardware device management')
     .addTag('Incidents', 'Incident reporting')
     .addTag('Health', 'Health check')
+    .addTag('Metrics', 'Prometheus metrics')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { RouterProvider } from 'react-router-dom';
 import { router } from '@/router';
-import theme from '@/theme';
+import lightTheme from '@/theme';
+import darkTheme from '@/theme/dark';
+import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
 import { socketService } from '@/services/socket';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
-import { ToastProvider } from '@/components/common/ToastProvider';
+import { ToastProvider, useToast } from '@/components/common/ToastProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +42,22 @@ function SocketInitializer() {
   return null;
 }
 
+function NotificationToastHandler() {
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    socketService.on('notification', (data) => {
+      showToast(data.title, 'info');
+    });
+  }, [showToast]);
+
+  return null;
+}
+
 export default function App() {
+  const mode = useThemeStore((s) => s.mode);
+  const theme = useMemo(() => (mode === 'dark' ? darkTheme : lightTheme), [mode]);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -48,6 +65,7 @@ export default function App() {
           <CssBaseline />
           <ToastProvider>
             <SocketInitializer />
+            <NotificationToastHandler />
             <RouterProvider router={router} />
           </ToastProvider>
         </ThemeProvider>

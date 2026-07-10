@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { IncidentSeverity, IncidentStatus } from '@prisma/client';
 import { Request } from 'express';
+import { AssignIncidentDto } from './dto/assign-incident.dto';
 
 @ApiTags('Incidents')
 @ApiBearerAuth('JWT-auth')
@@ -86,6 +87,13 @@ export class IncidentsController {
   @ApiOperation({ summary: 'Update incident' })
   async update(@Param('id') id: string, @Body() data: Record<string, unknown>) {
     return this.incidentsService.update(id, data as never);
+  }
+
+  @Post(':id/assign')
+  @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Assign incident to a staff member' })
+  async assign(@Param('id') id: string, @Body() dto: AssignIncidentDto) {
+    return this.incidentsService.assign(id, dto.assignedToId);
   }
 
   @Post(':id/resolve')

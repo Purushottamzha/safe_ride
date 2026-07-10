@@ -72,4 +72,23 @@ export class NotificationPreferencesService {
     });
     return prefs.map(p => p.userId);
   }
+
+  async getEnabledChannelsForUser(
+    userId: string,
+    eventType: string,
+  ): Promise<NotificationChannel[]> {
+    const prefs = await this.prisma.notificationPreference.findMany({
+      where: {
+        userId,
+        eventType: eventType as any,
+        enabled: true,
+      },
+      select: { channel: true },
+    });
+    const channels = prefs.map(p => p.channel);
+    if (channels.length === 0) {
+      return [NotificationChannel.IN_APP];
+    }
+    return channels;
+  }
 }

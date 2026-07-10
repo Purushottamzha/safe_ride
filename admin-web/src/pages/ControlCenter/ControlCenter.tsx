@@ -6,12 +6,12 @@ import {
 import {
   DirectionsBus, Speed, SignalWifiStatusbar4Bar, BatteryStd, AccessTime,
   MyLocation, Person, Route, School, Close, Layers, DarkMode, LightMode,
-  Terrain, Satellite,
+  Terrain, Satellite, Warning, NotificationsActive,
 } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { socketService, type BusLocation } from '../../services/socket';
+import { socketService, type BusLocation, type IncidentAlert } from '../../services/socket';
 import { useAuthStore } from '../../store/authStore';
 
 type MapStyle = 'street' | 'dark' | 'satellite';
@@ -36,8 +36,10 @@ const MAP_STYLES: Record<MapStyle, { url: string; label: string; icon: React.Rea
 
 const SCHOOL_POSITION: [number, number] = [27.6855, 85.3245];
 
-function createBusIcon(heading: number, isSelected: boolean, occupancyPct: number): L.DivIcon {
-  const color = occupancyPct >= 80 ? '#ef4444' : occupancyPct >= 50 ? '#f59e0b' : '#10b981';
+function createBusIcon(heading: number, isSelected: boolean, occupancyPct: number, hasIncident: boolean): L.DivIcon {
+  const baseColor = hasIncident ? '#ef4444' : occupancyPct >= 80 ? '#ef4444' : occupancyPct >= 50 ? '#f59e0b' : '#10b981';
+  const pulseAnim = hasIncident ? 'animation: incident-pulse 1s ease-in-out infinite;' : '';
+  const borderColor = hasIncident ? '#dc2626' : 'white';
   return L.divIcon({
     className: 'cc-bus-marker',
     html: `<div style="
@@ -45,13 +47,20 @@ function createBusIcon(heading: number, isSelected: boolean, occupancyPct: numbe
       width: ${isSelected ? 44 : 34}px;
       height: ${isSelected ? 44 : 34}px;
       display: flex; align-items: center; justify-content: center;
-      background: ${color};
-      border-radius: 8px; border: 3px solid white;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      background: ${baseColor};
+      border-radius: 8px; border: 3px solid ${borderColor};
+      box-shadow: ${hasIncident ? '0 0 20px rgba(239,68,68,0.8)' : '0 2px 12px rgba(0,0,0,0.4)'};
       transition: all 0.3s ease;
+      ${pulseAnim}
     "><svg width="20" height="20" viewBox="0 0 24 24" fill="white">
       <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-    </svg></div>`,
+    </svg></div>
+    <style>
+      @keyframes incident-pulse {
+        0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.8); }
+        50% { box-shadow: 0 0 40px rgba(239,68,68,1); }
+      }
+    </style>`,
     iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -22],
   });
 }
@@ -112,18 +121,17 @@ export default function ControlCenter() {
   const [mapStyle, setMapStyle] = useState<MapStyle>('street');
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeIncidents, setActiveIncidents] = useState<IncidentAlert[]>([]);
   const user = useAuthStore(s => s.user);
 
   useEffect(() => {
     const unsubLocation = socketService.onBusLocation((location) => {
       setBuses(prev => {
         const existing = prev.findIndex(b => b.busId === location.busId);
-        if (existing >= 0) {
-          const updated = [...prev];
-          updated[existing] = location;
-          return updated;
-        }
-        return [...prev, location];
+        const updated = existing >= 0
+          ? prev.map((b, i) => i === existing ? location : b)
+          : [...prev, location];
+        return updated;
       });
       setLoading(false);
     });
@@ -133,11 +141,30 @@ export default function ControlCenter() {
       setLoading(false);
     });
 
+    const unsubIncidentAlert = socketService.onIncidentAlert((alert) => {
+      setActiveIncidents(prev => {
+        if (prev.some(i => i.id === alert.id)) return prev;
+        return [...prev, alert];
+      });
+    });
+
+    const unsubIncidentResolved = socketService.onIncidentResolved((data) => {
+      setActiveIncidents(prev => prev.filter(i => i.id !== data.id));
+    });
+
     socketService.requestAllBuses();
     const interval = setInterval(() => socketService.requestAllBuses(), 15000);
 
-    return () => { unsubLocation(); unsubAllBuses(); clearInterval(interval); };
+    return () => { unsubLocation(); unsubAllBuses(); unsubIncidentAlert(); unsubIncidentResolved(); clearInterval(interval); };
   }, []);
+
+  useEffect(() => {
+    setSelectedBus(prev => {
+      if (!prev) return null;
+      const updated = buses.find(b => b.busId === prev.busId);
+      return updated || prev;
+    });
+  }, [buses]);
 
   const handleBusClick = useCallback((bus: BusLocation) => {
     setSelectedBus(bus);
@@ -188,11 +215,23 @@ export default function ControlCenter() {
           </Grid>
           <Grid item xs={6} md={2}>
             <Stack direction="row" spacing={0.5} alignItems="center">
-              <SignalWifiStatusbar4Bar sx={{ color: 'success.main', fontSize: 16 }} />
-              <Typography variant="caption">MQTT Connected</Typography>
+              <BatteryStd sx={{ color: 'success.main', fontSize: 16 }} />
+              <Typography variant="caption">
+                {buses.filter(b => b.batteryLevel != null && b.batteryLevel < 20).length > 0
+                  ? `${buses.filter(b => b.batteryLevel != null && b.batteryLevel < 20).length} low`
+                  : 'Battery OK'}
+              </Typography>
             </Stack>
           </Grid>
-          <Grid item xs={6} md={3}>
+          <Grid item xs={6} md={2}>
+            <Stack direction="row" spacing={0.5} alignItems="center">
+              <SignalWifiStatusbar4Bar sx={{ color: 'success.main', fontSize: 16 }} />
+              <Typography variant="caption">
+                {buses.filter(b => b.scannerStatus === 'ONLINE').length}/{buses.length} online
+              </Typography>
+            </Stack>
+          </Grid>
+          <Grid item xs={6} md={2}>
             <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end">
               <ToggleButtonGroup
                 value={mapStyle}
@@ -211,6 +250,35 @@ export default function ControlCenter() {
           </Grid>
         </Grid>
       </Box>
+
+      {/* Emergency banner */}
+      {activeIncidents.length > 0 && (
+        <Box sx={{
+          px: 2, py: 1, bgcolor: '#fef2f2', borderBottom: '2px solid #ef4444',
+          display: 'flex', alignItems: 'center', gap: 1.5,
+        }}>
+          <NotificationsActive sx={{ color: '#ef4444', animation: 'pulse-bell 1.5s ease-in-out infinite' }} />
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
+            <Typography variant="body2" fontWeight={700} color="#dc2626">
+              {activeIncidents.length} Active Incident{activeIncidents.length > 1 ? 's' : ''}
+            </Typography>
+            {activeIncidents.map(inc => (
+              <Chip
+                key={inc.id}
+                label={`${inc.busNumber ? inc.busNumber + ': ' : ''}${inc.title}`}
+                size="small"
+                color="error"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
+            ))}
+          </Stack>
+          <Typography variant="caption" color="#991b1b">
+            Check incident details
+          </Typography>
+          <style>{`@keyframes pulse-bell { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+        </Box>
+      )}
 
       {/* Map area */}
       <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -232,7 +300,7 @@ export default function ControlCenter() {
             <Marker
               key={bus.busId}
               position={[bus.lat, bus.lng]}
-              icon={createBusIcon(bus.heading, selectedBus?.busId === bus.busId, occupancyPct(bus))}
+              icon={createBusIcon(bus.heading, selectedBus?.busId === bus.busId, occupancyPct(bus), activeIncidents.some(i => i.busId === bus.busId))}
               eventHandlers={{ click: () => handleBusClick(bus) }}
             >
               <Popup>
@@ -297,11 +365,20 @@ export default function ControlCenter() {
                       <Typography variant="caption" noWrap fontWeight={600}>{bus.routeName || bus.busId.slice(0, 8)}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.6rem', display: 'block' }}>
                         {bus.speed.toFixed(0)} km/h · {bus.occupancy}/{bus.capacity}
+                        {bus.batteryLevel != null && ` · ${bus.batteryLevel.toFixed(0)}%`}
                       </Typography>
                     </Box>
-                    <Typography variant="caption" sx={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'text.secondary' }}>
-                      {bus.eta?.slice(0, 5) || '--:--'}
-                    </Typography>
+                    <Stack direction="row" spacing={0.5} alignItems="center">
+                      {bus.batteryLevel != null && (
+                        <Box sx={{
+                          width: 6, height: 6, borderRadius: '50%',
+                          bgcolor: bus.batteryLevel < 20 ? '#ef4444' : bus.batteryLevel < 50 ? '#f59e0b' : '#22c55e',
+                        }} />
+                      )}
+                      <Typography variant="caption" sx={{ fontSize: '0.6rem', fontFamily: 'monospace', color: 'text.secondary' }}>
+                        {bus.eta?.slice(0, 5) || '--:--'}
+                      </Typography>
+                    </Stack>
                   </Box>
                 );
               })}
@@ -433,14 +510,46 @@ export default function ControlCenter() {
 
               <Divider sx={{ my: 2 }} />
 
-              {/* Health indicators */}
+              {/* Device Health — live from telemetry */}
               <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1.5 }}>Device Health</Typography>
               <Grid container spacing={1}>
                 {[
-                  { label: 'GPS', value: 'Good', color: 'success.main', icon: <MyLocation sx={{ fontSize: 16 }} /> },
-                  { label: 'Scanner', value: 'Online', color: 'success.main', icon: <DirectionsBus sx={{ fontSize: 16 }} /> },
-                  { label: 'Network', value: 'Connected', color: 'success.main', icon: <SignalWifiStatusbar4Bar sx={{ fontSize: 16 }} /> },
-                  { label: 'Battery', value: '85%', color: 'success.main', icon: <BatteryStd sx={{ fontSize: 16 }} /> },
+                  {
+                    label: 'Battery',
+                    value: selectedBus.batteryLevel != null ? `${selectedBus.batteryLevel.toFixed(0)}%` : '--',
+                    color: selectedBus.batteryLevel != null ? (selectedBus.batteryLevel < 20 ? 'error.main' : selectedBus.batteryLevel < 50 ? 'warning.main' : 'success.main') : 'text.secondary',
+                    icon: <BatteryStd sx={{ fontSize: 16 }} />,
+                  },
+                  {
+                    label: 'Scanner',
+                    value: selectedBus.scannerStatus || '--',
+                    color: selectedBus.scannerStatus === 'ONLINE' ? 'success.main' : selectedBus.scannerStatus === 'ERROR' ? 'error.main' : 'text.secondary',
+                    icon: <DirectionsBus sx={{ fontSize: 16 }} />,
+                  },
+                  {
+                    label: 'GPS Accuracy',
+                    value: selectedBus.gpsAccuracy != null ? `${selectedBus.gpsAccuracy.toFixed(0)}m` : '--',
+                    color: selectedBus.gpsAccuracy != null ? (selectedBus.gpsAccuracy > 50 ? 'warning.main' : 'success.main') : 'text.secondary',
+                    icon: <MyLocation sx={{ fontSize: 16 }} />,
+                  },
+                  {
+                    label: 'Last Heartbeat',
+                    value: selectedBus.lastHeartbeatAt ? new Date(selectedBus.lastHeartbeatAt).toLocaleTimeString() : '--',
+                    color: selectedBus.lastHeartbeatAt && Date.now() - new Date(selectedBus.lastHeartbeatAt).getTime() < 300000 ? 'success.main' : 'warning.main',
+                    icon: <SignalWifiStatusbar4Bar sx={{ fontSize: 16 }} />,
+                  },
+                  {
+                    label: 'Firmware',
+                    value: selectedBus.firmwareVersion || '--',
+                    color: 'text.secondary',
+                    icon: <Speed sx={{ fontSize: 16 }} />,
+                  },
+                  {
+                    label: 'Last QR Scan',
+                    value: selectedBus.lastQrScanAt ? new Date(selectedBus.lastQrScanAt).toLocaleTimeString() : '--',
+                    color: 'text.secondary',
+                    icon: <AccessTime sx={{ fontSize: 16 }} />,
+                  },
                 ].map((item) => (
                   <Grid item xs={6} key={item.label}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1.5 }}>

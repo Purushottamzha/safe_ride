@@ -31,10 +31,14 @@ import { ExportModule } from './modules/export/export.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { DriverSafetyModule } from './modules/driver-safety/driver-safety.module';
 import { SimulatorModule } from './modules/simulator/simulator.module';
+import { QRManagementModule } from './modules/qr-management/qr-management.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { RetentionModule } from './modules/retention/retention.module';
 import { MqttModule } from './modules/mqtt/mqtt.module';
+import { TelemetryModule } from './modules/telemetry/telemetry.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -88,6 +92,10 @@ import configuration from './config/configuration';
     DevicesModule,
     RetentionModule,
     MqttModule,
+    TelemetryModule,
+    MaintenanceModule,
+    MetricsModule,
+    QRManagementModule,
   ],
   providers: [
     {

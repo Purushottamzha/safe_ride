@@ -74,10 +74,13 @@ const schoolIcon = L.divIcon({
 function AnimatedBusMarker({ position, heading }: { position: [number, number]; heading: number }) {
   const markerRef = useRef<L.Marker>(null);
   const currentPos = useRef(position);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) return;
+
+    cancelAnimationFrame(rafRef.current);
 
     const [targetLat, targetLng] = position;
     const [currentLat, currentLng] = currentPos.current;
@@ -97,10 +100,12 @@ function AnimatedBusMarker({ position, heading }: { position: [number, number]; 
       const newLat = currentLat + latStep * step;
       const newLng = currentLng + lngStep * step;
       marker.setLatLng([newLat, newLng]);
-      requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(animate);
     };
 
-    requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(rafRef.current);
   }, [position]);
 
   return <Marker ref={markerRef} position={position} icon={busIcon(heading)} />;

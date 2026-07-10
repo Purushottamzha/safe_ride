@@ -1,0 +1,65 @@
+groups:
+  - name: saferide_alerts
+    rules:
+      - alert: BackendDown
+        expr: up{job="saferide-backend"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend instance is down"
+          description: "SafeRide backend has been unreachable for more than 30 seconds."
+
+      - alert: HighErrorRate
+        expr: rate(http_errors_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "Error rate is {{ $value }} errors/sec over the last 5 minutes."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m])) > 1000
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is {{ $value }}ms"
+
+      - alert: MqttDisconnected
+        expr: saferide_mqtt_connected == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MQTT Broker disconnected"
+          description: "Backend MQTT connection has been lost for more than 1 minute."
+
+      - alert: LowBattery
+        expr: saferide_device_battery_percent < 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Device battery low"
+          description: "Device {{ $labels.device_id }} on bus {{ $labels.bus_id }} battery is at {{ $value }}%"
+
+      - alert: NoHeartbeat
+        expr: saferide_device_heartbeat_seconds > 120
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Device heartbeat lost"
+          description: "Device {{ $labels.device_id }} on bus {{ $labels.bus_id }} has not reported for {{ $value }} seconds"
+
+      - alert: ContainerDown
+        expr: time() - container_last_seen > 60
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container is down"
+          description: "A container has been unreachable for more than 60 seconds"

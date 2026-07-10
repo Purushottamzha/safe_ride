@@ -112,11 +112,11 @@ export default function Header({ onDrawerToggle }: HeaderProps) {
             </Typography>
           </Box>
           <Divider />
-          <MenuItem onClick={() => { handleMenuClose(); }}>
+          <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>
             <ListItemIcon><Person fontSize="small" /></ListItemIcon>
             Profile
           </MenuItem>
-          <MenuItem onClick={() => { handleMenuClose(); }}>
+          <MenuItem onClick={() => { handleMenuClose(); navigate('/settings'); }}>
             <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
             Settings
           </MenuItem>

@@ -204,15 +204,19 @@ export class NotificationRulesService {
       data?: Record<string, unknown>;
     },
   ) {
-    await this.notificationsService.create({
-      type: opts.type,
-      channel: NotificationChannel.IN_APP,
-      title: opts.title,
-      body: opts.body,
-      data: opts.data,
-      userId,
-      schoolId,
-    });
+    const channels = await this.preferencesService.getEnabledChannelsForUser(userId, opts.eventType);
+
+    for (const channel of channels) {
+      await this.notificationsService.create({
+        type: opts.type,
+        channel,
+        title: opts.title,
+        body: opts.body,
+        data: opts.data,
+        userId,
+        schoolId,
+      });
+    }
   }
 
   private async getParentUserIdsForTrip(tripId: string): Promise<string[]> {

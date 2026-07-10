@@ -33,6 +33,7 @@ type EventHandlerMap = {
 
 class SocketService {
   private socket: Socket | null = null;
+  private handlers = new Map<string, Set<Function>>();
 
   connect() {
     if (this.socket?.connected) return;
@@ -63,21 +64,35 @@ class SocketService {
         useAuthStore.getState().logout();
       }
     });
+
+    this.socket.io.on('reconnect_attempt', () => {
+      const freshToken = useAuthStore.getState().accessToken;
+      if (this.socket) {
+        this.socket.auth = { token: freshToken };
+      }
+    });
   }
 
   disconnect() {
     if (this.socket) {
+      this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
     }
+    this.handlers.clear();
   }
 
   on<T extends keyof EventHandlerMap>(event: T, handler: EventHandlerMap[T]) {
     this.socket?.on(event, handler as any);
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, new Set());
+    }
+    this.handlers.get(event)!.add(handler as Function);
   }
 
   off<T extends keyof EventHandlerMap>(event: T, handler: EventHandlerMap[T]) {
     this.socket?.off(event, handler as any);
+    this.handlers.get(event)?.delete(handler as Function);
   }
 
   emit(event: string, data: unknown) {

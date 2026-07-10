@@ -13,6 +13,10 @@ import DoneIcon from '@mui/icons-material/Done';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import BloodtypeIcon from '@mui/icons-material/Bloodtype';
+import PhoneIcon from '@mui/icons-material/Phone';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { getStudentById } from '@/services/students';
@@ -148,55 +152,50 @@ export default function StudentStatus() {
         </CardContent>
       </MotionCard>
 
-      {activeTrip && (
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          sx={{ mb: 2 }}
-        >
-          <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-            <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-              Driver & Bus Info
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
-                <PersonIcon color="action" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {activeTrip.driverName || 'Unknown Driver'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Driver
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
-                <DirectionsBusIcon color="primary" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {activeTrip.busNumber || 'Unknown'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Bus Number
-                  </Typography>
-                </Box>
-              </Box>
-              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
-                <AccessTimeIcon color="action" />
-                <Box>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {activeTrip.direction === 'TO_SCHOOL' ? 'To School' : 'From School'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Direction
-                  </Typography>
-                </Box>
-              </Box>
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        sx={{ mb: 2 }}
+      >
+        <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+            Driver & Bus Info
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <Button fullWidth variant="outlined" sx={{ p: 1.5, flexDirection: 'column', gap: 0.5 }}
+              onClick={() => navigate(`/student/${id}/driver`)}>
+              <PersonIcon color="primary" />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {activeTrip?.driverName || student?.driver?.name || 'Driver'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">View Driver</Typography>
+            </Button>
+            <Button fullWidth variant="outlined" sx={{ p: 1.5, flexDirection: 'column', gap: 0.5 }}
+              onClick={() => navigate(`/student/${id}/bus`)}>
+              <DirectionsBusIcon color="primary" />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {activeTrip?.busNumber || student?.bus?.busNumber || 'Bus'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">View Bus</Typography>
+            </Button>
+            <Button fullWidth variant="outlined" sx={{ p: 1.5, flexDirection: 'column', gap: 0.5 }}
+              onClick={() => navigate(`/student/${id}/emergency`)}>
+              <LocalHospitalIcon color="error" />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Emergency</Typography>
+              <Typography variant="caption" color="text.secondary">Contacts</Typography>
+            </Button>
+          </Box>
+          {activeTrip && (
+            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center' }}>
+              <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="caption" color="text.secondary">
+                {activeTrip.direction === 'TO_SCHOOL' ? 'To School' : 'From School'}
+              </Typography>
             </Box>
-          </CardContent>
-        </MotionCard>
-      )}
+          )}
+        </CardContent>
+      </MotionCard>
 
       <MotionCard
         initial={{ opacity: 0, y: 20 }}
@@ -274,6 +273,50 @@ export default function StudentStatus() {
           )}
         </CardContent>
       </MotionCard>
+
+      {(student.bloodGroup || student.emergencyContact || student.medicalNotes) && (
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          sx={{ mb: 2 }}
+        >
+          <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
+            <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
+              Medical Information
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {student.bloodGroup && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <BloodtypeIcon color="error" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Blood Group</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{student.bloodGroup}</Typography>
+                  </Box>
+                </Box>
+              )}
+              {student.emergencyContact && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <PhoneIcon color="primary" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Emergency Contact</Typography>
+                    <Typography variant="body2">{student.emergencyContact}</Typography>
+                  </Box>
+                </Box>
+              )}
+              {student.medicalNotes && (
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  <LocalHospitalIcon color="warning" sx={{ mt: 0.25 }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Medical Notes</Typography>
+                    <Typography variant="body2">{student.medicalNotes}</Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </CardContent>
+        </MotionCard>
+      )}
 
       <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
         <Button

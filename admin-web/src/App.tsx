@@ -11,7 +11,7 @@ import { createRouter } from './router';
 import { socketService } from './services/socket';
 import LoadingScreen from './components/common/LoadingScreen';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import { ToastProvider } from './components/common/ToastProvider';
+import { ToastProvider, useToast } from './components/common/ToastProvider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +39,19 @@ function SocketInitializer() {
   return null;
 }
 
+function NotificationToastHandler() {
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const cleanup = socketService.onNotificationNew((data) => {
+      showToast(data.title, 'info');
+    });
+    return cleanup;
+  }, [showToast]);
+
+  return null;
+}
+
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isLoading, loadUser } = useAuth();
   const token = useAuthStore((s) => s.accessToken);
@@ -54,6 +67,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SocketInitializer />
+      <NotificationToastHandler />
       {children}
     </>
   );

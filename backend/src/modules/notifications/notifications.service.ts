@@ -1,13 +1,19 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationGateway } from './notification.gateway';
-import { Prisma, NotificationType, NotificationChannel } from '@prisma/client';
+import { EmailService } from './email.service';
+import { Prisma, NotificationType, NotificationChannel, DeliveryStatus } from '@prisma/client';
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+  private readonly MAX_RETRIES = 3;
+
   constructor(
     private prisma: PrismaService,
     private notificationGateway: NotificationGateway,
+    private emailService: EmailService,
   ) {}
 
   async findAll(params: {
@@ -88,9 +94,10 @@ export class NotificationsService {
         userId: data.userId,
         schoolId: data.schoolId,
         sentAt: new Date(),
+        deliveryStatus: DeliveryStatus.PENDING,
       },
       include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
       },
     });
 
@@ -105,7 +112,184 @@ export class NotificationsService {
       });
     }
 
+    this.dispatchByChannel(notification.id, data).catch((err) =>
+      this.logger.error(`Channel dispatch failed: ${err.message}`),
+    );
+
     return notification;
+  }
+
+  private async dispatchByChannel(
+    notificationId: string,
+    data: {
+      type: NotificationType;
+      channel: NotificationChannel;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      userId?: string;
+      schoolId?: string;
+    },
+  ) {
+    if (data.channel === NotificationChannel.EMAIL) {
+      await this.sendEmailDelivery(notificationId, data);
+    } else if (data.channel === NotificationChannel.PUSH) {
+      await this.sendPushDelivery(notificationId, data);
+    } else if (data.channel === NotificationChannel.SMS) {
+      await this.sendSmsDelivery(notificationId, data);
+    } else {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.DELIVERED);
+    }
+  }
+
+  private async sendEmailDelivery(
+    notificationId: string,
+    data: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      userId?: string;
+    },
+  ) {
+    if (!data.userId) {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, 'No userId');
+      return;
+    }
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { email: true },
+      });
+      if (!user?.email) {
+        await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, 'No email address');
+        return;
+      }
+
+      const success = await this.emailService.sendEmail({
+        to: user.email,
+        subject: data.title,
+        body: data.body,
+        html: data.data?.htmlContent as string | undefined,
+      });
+
+      if (success) {
+        await this.updateDeliveryStatus(notificationId, DeliveryStatus.SENT);
+      } else {
+        await this.markForRetry(notificationId, 'SMTP delivery failed');
+      }
+    } catch (error) {
+      await this.markForRetry(notificationId, (error as Error).message);
+    }
+  }
+
+  private async sendPushDelivery(
+    notificationId: string,
+    data: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      data?: Record<string, unknown>;
+      userId?: string;
+    },
+  ) {
+    if (data.userId) {
+      this.notificationGateway.sendToUser(data.userId, 'notification:push', {
+        id: notificationId,
+        title: data.title,
+        body: data.body,
+        type: data.type,
+        data: data.data,
+      });
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.DELIVERED);
+    } else {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, 'No userId');
+    }
+  }
+
+  private async sendSmsDelivery(
+    notificationId: string,
+    data: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      userId?: string;
+    },
+  ) {
+    if (!data.userId) {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, 'No userId');
+      return;
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: data.userId },
+      select: { phone: true },
+    });
+    if (!user?.phone) {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, 'No phone number');
+      return;
+    }
+
+    this.logger.log(`[SMS STUB] To: ${user.phone} | Body: ${data.body.substring(0, 100)}`);
+    await this.markForRetry(notificationId, 'SMS gateway not configured');
+  }
+
+  private async updateDeliveryStatus(notificationId: string, status: DeliveryStatus, lastError?: string) {
+    const updateData: any = { deliveryStatus: status };
+    if (status === DeliveryStatus.SENT || status === DeliveryStatus.DELIVERED) {
+      updateData.deliveredAt = new Date();
+    }
+    if (lastError) {
+      updateData.lastError = lastError;
+    }
+    await this.prisma.notification.update({
+      where: { id: notificationId },
+      data: updateData,
+    });
+  }
+
+  private async markForRetry(notificationId: string, error: string) {
+    const notification = await this.prisma.notification.findUnique({
+      where: { id: notificationId },
+      select: { retryCount: true },
+    });
+    const retryCount = (notification?.retryCount ?? 0) + 1;
+
+    if (retryCount >= this.MAX_RETRIES) {
+      await this.updateDeliveryStatus(notificationId, DeliveryStatus.FAILED, error);
+    } else {
+      await this.prisma.notification.update({
+        where: { id: notificationId },
+        data: { retryCount, lastError: error },
+      });
+    }
+  }
+
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async retryFailedDeliveries(): Promise<number> {
+    const failed = await this.prisma.notification.findMany({
+      where: {
+        deliveryStatus: DeliveryStatus.FAILED,
+        retryCount: { lt: this.MAX_RETRIES },
+        channel: { in: [NotificationChannel.EMAIL, NotificationChannel.PUSH, NotificationChannel.SMS] },
+      },
+      take: 50,
+    });
+
+    for (const notification of failed) {
+      await this.dispatchByChannel(notification.id, {
+        type: notification.type as NotificationType,
+        channel: notification.channel as NotificationChannel,
+        title: notification.title,
+        body: notification.body,
+        data: (notification.data as Record<string, unknown>) || undefined,
+        userId: notification.userId || undefined,
+        schoolId: notification.schoolId || undefined,
+      });
+    }
+
+    return failed.length;
   }
 
   async markAsRead(id: string, userId?: string) {
@@ -159,14 +343,16 @@ export class NotificationsService {
 
     return this.prisma.notification.create({
       data: {
-        type: 'ATTENDANCE',
-        channel: 'WEBSOCKET',
+        type: 'ATTENDANCE' as NotificationType,
+        channel: 'IN_APP' as NotificationChannel,
         title,
         body,
         userId: parent.userId,
         schoolId: trip.schoolId,
         data: payload as any,
         sentAt: new Date(),
+        deliveryStatus: DeliveryStatus.DELIVERED,
+        deliveredAt: new Date(),
       },
     });
   }
@@ -216,14 +402,16 @@ export class NotificationsService {
 
     return this.prisma.notification.create({
       data: {
-        type: 'TRIP_UPDATE',
-        channel: 'WEBSOCKET',
+        type: 'TRIP_UPDATE' as NotificationType,
+        channel: 'IN_APP' as NotificationChannel,
         title: config.title,
         body: config.body,
         userId: driver.id,
         schoolId: trip.schoolId,
         data: payload as any,
         sentAt: new Date(),
+        deliveryStatus: DeliveryStatus.DELIVERED,
+        deliveredAt: new Date(),
       },
     });
   }
@@ -246,13 +434,15 @@ export class NotificationsService {
 
     return this.prisma.notification.create({
       data: {
-        type: 'INCIDENT',
-        channel: 'WEBSOCKET',
+        type: 'INCIDENT' as NotificationType,
+        channel: 'IN_APP' as NotificationChannel,
         title,
         body,
         schoolId,
         data: payload as any,
         sentAt: new Date(),
+        deliveryStatus: DeliveryStatus.DELIVERED,
+        deliveredAt: new Date(),
       },
     });
   }

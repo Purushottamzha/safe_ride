@@ -81,6 +81,14 @@ enum NotificationChannel {
   SMS
 }
 
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
 enum NotificationEventType {
   TRIP_STARTED
   BUS_APPROACHING
@@ -133,6 +141,54 @@ enum DeviceStatus {
   ERROR
 }
 
+enum MaintenanceType {
+  ROUTINE
+  REPAIR
+  TYRE_REPLACEMENT
+  BRAKE_SERVICE
+  ENGINE_SERVICE
+  ELECTRICAL
+  BODY_WORK
+  INSPECTION
+  OTHER
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum InspectionResult {
+  PASS
+  FAIL
+  PENDING
+}
+
+enum FuelType {
+  DIESEL
+  PETROL
+  CNG
+  ELECTRIC
+}
+
+enum DocumentType {
+  REGISTRATION
+  INSURANCE
+  PERMIT
+  POLLUTION
+  FITNESS
+  OTHER
+}
+
 model School {
   id        String    @id @default(uuid())
   name      String
@@ -160,6 +216,14 @@ model School {
   attendance           Attendance[]
   pendingStudentRequests PendingStudentRequest[]
   devices              Device[]
+  busTelemetry         BusTelemetry[]
+  maintenanceRecords   MaintenanceRecord[]
+  serviceSchedules     ServiceSchedule[]
+  inspections          Inspection[]
+  fuelLogs             FuelLog[]
+  insurancePolicies    InsurancePolicy[]
+  vehicleDocuments     VehicleDocument[]
+  serviceReminders     ServiceReminder[]
 
   @@index([code])
   @@index([isActive])
@@ -195,6 +259,7 @@ model User {
   tripVerifications       TripEvent[]              @relation("TripVerification")
   reportedIncidents       Incident[]               @relation("ReportedIncidents")
   resolvedIncidents       Incident[]               @relation("ResolvedIncidents")
+  assignedIncidents       Incident[]               @relation("AssignedIncidents")
   reviewedPendingRequests PendingStudentRequest[]  @relation("PendingReview")
   notifications           Notification[]
   notificationPreferences NotificationPreference[]
@@ -265,6 +330,10 @@ model Student {
   emergencyNotes String?
   address        String
   phone          String?
+  qrGeneratedAt  DateTime?
+  qrVersion      Int       @default(1)
+  qrImagePath    String?
+  qrLastPrintedAt DateTime?
   schoolId       String
   school         School    @relation(fields: [schoolId], references: [id])
   createdAt      DateTime  @default(now())
@@ -346,12 +415,15 @@ model Driver {
   id               String    @id @default(uuid())
   userId           String    @unique
   user             User      @relation(fields: [userId], references: [id])
-  licenseNumber    String    @unique
-  licenseExpiry    DateTime
-  isAvailable      Boolean   @default(true)
-  emergencyContact String?
-  medicalNotes     String?
-  schoolId         String
+  licenseNumber        String    @unique
+  licenseExpiry        DateTime
+  licenseDocumentUrl   String?
+  medicalCertificateExpiry DateTime?
+  medicalDocumentUrl   String?
+  isAvailable          Boolean   @default(true)
+  emergencyContact     String?
+  medicalNotes         String?
+  schoolId             String
   school           School    @relation(fields: [schoolId], references: [id])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -384,15 +456,44 @@ model Bus {
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
 
-  busAssignments BusAssignment[]
-  trips          Trip[]
-  incidents      Incident[]
-  devices        Device[]
+  busAssignments    BusAssignment[]
+  trips             Trip[]
+  incidents         Incident[]
+  devices           Device[]
+  telemetry         BusTelemetry?
+  maintenanceRecords MaintenanceRecord[]
+  serviceSchedules  ServiceSchedule[]
+  inspections       Inspection[]
+  fuelLogs          FuelLog[]
+  insurancePolicies InsurancePolicy[]
+  vehicleDocuments  VehicleDocument[]
+  serviceReminders  ServiceReminder[]
 
   @@index([plateNumber])
   @@index([schoolId])
   @@index([gpsDeviceId])
   @@map("buses")
+}
+
+model BusTelemetry {
+  busId           String   @id
+  schoolId        String
+  batteryLevel    Float?
+  storageFree     Float?
+  gpsAccuracy     Float?
+  mqttSignal      Int?
+  wifiSignal      Int?
+  scannerStatus   String?
+  firmwareVersion String?
+  lastQrScanAt    DateTime?
+  lastHeartbeatAt DateTime?
+  updatedAt       DateTime @updatedAt
+
+  bus    Bus    @relation(fields: [busId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@map("bus_telemetry")
 }
 
 model Device {
@@ -650,21 +751,24 @@ model Attendance {
 }
 
 model Notification {
-  id          String              @id @default(uuid())
-  type        NotificationType
-  channel     NotificationChannel
-  title       String
-  body        String
-  data        Json?
-  userId      String?
-  user        User?               @relation(fields: [userId], references: [id])
-  schoolId    String?
-  school      School?             @relation(fields: [schoolId], references: [id])
-  isRead      Boolean             @default(false)
-  readAt      DateTime?
-  sentAt      DateTime?
-  deliveredAt DateTime?
-  createdAt   DateTime            @default(now())
+  id              String              @id @default(uuid())
+  type            NotificationType
+  channel         NotificationChannel
+  title           String
+  body            String
+  data            Json?
+  userId          String?
+  user            User?               @relation(fields: [userId], references: [id])
+  schoolId        String?
+  school          School?             @relation(fields: [schoolId], references: [id])
+  isRead          Boolean             @default(false)
+  readAt          DateTime?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  deliveryStatus  DeliveryStatus      @default(PENDING)
+  retryCount      Int                 @default(0)
+  lastError       String?
+  createdAt       DateTime            @default(now())
 
   @@index([userId])
   @@index([schoolId])
@@ -753,6 +857,8 @@ model Incident {
   location     String?
   reportedById String
   reportedBy   User             @relation("ReportedIncidents", fields: [reportedById], references: [id])
+  assignedToId String?
+  assignedTo   User?            @relation("AssignedIncidents", fields: [assignedToId], references: [id])
   tripId       String?
   trip         Trip?            @relation(fields: [tripId], references: [id])
   studentId    String?
@@ -855,4 +961,161 @@ model AuditLog {
   @@index([timestamp])
   @@index([schoolId])
   @@map("audit_logs")
+}
+
+model MaintenanceRecord {
+  id          String           @id @default(uuid())
+  busId        String
+  bus          Bus              @relation(fields: [busId], references: [id])
+  schoolId     String
+  school       School           @relation(fields: [schoolId], references: [id])
+  type         MaintenanceType
+  description  String
+  priority     MaintenancePriority @default(MEDIUM)
+  status       ServiceStatus    @default(SCHEDULED)
+  scheduledAt  DateTime?
+  completedAt  DateTime?
+  cost         Float?
+  odometer     Int?
+  vendor       String?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([status])
+  @@map("maintenance_records")
+}
+
+model ServiceSchedule {
+  id          String           @id @default(uuid())
+  busId        String
+  bus          Bus              @relation(fields: [busId], references: [id])
+  schoolId     String
+  school       School           @relation(fields: [schoolId], references: [id])
+  type         MaintenanceType
+  description  String
+  scheduledAt  DateTime
+  status       ServiceStatus    @default(SCHEDULED)
+  assignedTo   String?
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([status])
+  @@map("service_schedules")
+}
+
+model Inspection {
+  id               String           @id @default(uuid())
+  busId             String
+  bus               Bus              @relation(fields: [busId], references: [id])
+  schoolId          String
+  school            School           @relation(fields: [schoolId], references: [id])
+  inspectorName     String
+  date              DateTime
+  result            InspectionResult @default(PENDING)
+  notes             String?
+  nextInspectionDate DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([result])
+  @@map("inspections")
+}
+
+model FuelLog {
+  id          String   @id @default(uuid())
+  busId        String
+  bus          Bus      @relation(fields: [busId], references: [id])
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id])
+  date         DateTime @default(now())
+  liters       Float
+  costPerLiter Float
+  totalCost    Float
+  odometer     Int?
+  fuelType     FuelType @default(DIESEL)
+  station      String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([date])
+  @@map("fuel_logs")
+}
+
+model InsurancePolicy {
+  id            String   @id @default(uuid())
+  busId          String
+  bus            Bus      @relation(fields: [busId], references: [id])
+  schoolId       String
+  school         School   @relation(fields: [schoolId], references: [id])
+  provider       String
+  policyNumber   String
+  startDate      DateTime
+  expiryDate     DateTime
+  coverage       String?
+  premium        Float?
+  notes          String?
+  documentUrl    String?
+  status         ServiceStatus @default(SCHEDULED)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([expiryDate])
+  @@map("insurance_policies")
+}
+
+model VehicleDocument {
+  id             String       @id @default(uuid())
+  busId           String
+  bus             Bus          @relation(fields: [busId], references: [id])
+  schoolId        String
+  school          School       @relation(fields: [schoolId], references: [id])
+  type            DocumentType
+  documentNumber  String?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  fileUrl         String?
+  notes           String?
+  status          ServiceStatus @default(SCHEDULED)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([expiryDate])
+  @@map("vehicle_documents")
+}
+
+model ServiceReminder {
+  id               String    @id @default(uuid())
+  busId             String
+  bus               Bus       @relation(fields: [busId], references: [id])
+  schoolId          String
+  school            School    @relation(fields: [schoolId], references: [id])
+  type              MaintenanceType
+  description       String
+  dueDate           DateTime?
+  dueOdometer       Int?
+  odometerInterval  Int?
+  isRecurring       Boolean   @default(true)
+  lastTriggeredAt   DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([busId])
+  @@index([schoolId])
+  @@index([isActive])
+  @@map("service_reminders")
 }

@@ -5,6 +5,8 @@ import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { QRService } from '../qr/qr.service';
 import { HardwareService } from '../hardware/hardware.service';
+import { TelemetryService } from '../telemetry/telemetry.service';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class MqttService implements OnModuleInit, OnModuleDestroy {
@@ -19,6 +21,8 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly qrService: QRService,
     private readonly hardwareService: HardwareService,
+    private readonly telemetryService: TelemetryService,
+    private readonly metricsService: MetricsService,
   ) {
     this.mqttUrl = this.configService.get<string>('mqtt.url') || 'mqtt://localhost:1883';
     this.mqttUsername = this.configService.get<string>('mqtt.username') || 'saferide-backend';
@@ -26,7 +30,11 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.connect();
+    try {
+      await this.connect();
+    } catch (err) {
+      this.logger.error(`MQTT connection failed: ${(err as Error).message}. Server continuing without MQTT.`);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -37,7 +45,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async connect(): Promise<void> {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>((resolve, reject) => {
       this.client = connect(this.mqttUrl, {
         username: this.mqttUsername,
         password: this.mqttPassword,
@@ -53,7 +61,14 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
+      const timeout = setTimeout(() => {
+        this.client.end(true);
+        reject(new Error('MQTT connection timed out after 15s'));
+      }, 15000);
+
       this.client.on('connect', () => {
+        clearTimeout(timeout);
+        this.metricsService.setMqttConnected(true);
         this.logger.log(`Connected to MQTT broker at ${this.mqttUrl}`);
         this.subscribeToTopics();
         this.client.publish('saferide/backend/status', 'online', { qos: 1, retain: true });
@@ -69,6 +84,7 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       });
 
       this.client.on('offline', () => {
+        this.metricsService.setMqttConnected(false);
         this.logger.warn('MQTT client went offline');
       });
 
@@ -194,13 +210,25 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // Step 4: Determine scan direction
-    let trip: { status: string; type: string };
+    // Step 4: Validate bus ownership — the trip must belong to the bus from the MQTT topic
+    let trip: { status: string; type: string; busId: string | null };
     try {
       trip = await this.hardwareService.getTripById(tripId);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Scan event ${eventId}: trip ${tripId} not found — ${message}`);
+      return;
+    }
+
+    if (!trip.busId) {
+      this.logger.warn(`Scan event ${eventId}: trip ${tripId} has no bus assigned`);
+      return;
+    }
+
+    if (trip.busId !== busId) {
+      this.logger.warn(
+        `Scan event ${eventId}: bus mismatch — topic says ${busId} but trip ${tripId} belongs to bus ${trip.busId}`,
+      );
       return;
     }
 
@@ -227,6 +255,9 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
         eventId,
       });
       this.logger.log(`Scan processed successfully: eventId=${eventId}, student=${student.id}, trip=${tripId}, type=${scanType}`);
+      this.telemetryService.upsert(busId, schoolId, { lastQrScanAt: new Date() }).catch(
+        (e: unknown) => this.logger.error(`Failed to update lastQrScanAt for bus ${busId}: ${(e as Error).message}`),
+      );
     } catch (err: unknown) {
       if (err instanceof ConflictException) {
         // Expected on MQTT retry — duplicate scan, safe to ignore
@@ -273,6 +304,14 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
           busId,
         },
       });
+
+      if (payload.accuracy) {
+        this.telemetryService.upsert(busId, schoolId, {
+          gpsAccuracy: parseFloat(payload.accuracy as string) || null,
+        }).catch(
+          (e: unknown) => this.logger.error(`Failed to update GPS accuracy for bus ${busId}: ${(e as Error).message}`),
+        );
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Failed to upsert location event ${eventId}: ${message}`);
@@ -283,5 +322,25 @@ export class MqttService implements OnModuleInit, OnModuleDestroy {
 
   private async handleHeartbeatEvent(schoolId: string, busId: string, payload: Record<string, unknown>): Promise<void> {
     this.logger.debug(`Heartbeat from bus=${busId}, school=${schoolId}: battery=${payload.batteryLevel}, storage=${payload.storageFree}`);
+
+    try {
+      await this.telemetryService.upsert(busId, schoolId, {
+        batteryLevel: payload.batteryLevel != null ? Number(payload.batteryLevel) : null,
+        storageFree: payload.storageFree != null ? Number(payload.storageFree) : null,
+        mqttSignal: payload.mqttSignal != null ? Number(payload.mqttSignal) : null,
+        wifiSignal: payload.wifiSignal != null ? Number(payload.wifiSignal) : null,
+        scannerStatus: (payload.scannerStatus as string) || 'ONLINE',
+        firmwareVersion: (payload.firmwareVersion as string) || null,
+        lastHeartbeatAt: new Date(),
+      });
+
+      await this.prisma.device.updateMany({
+        where: { busId },
+        data: { lastSeenAt: new Date() },
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to persist heartbeat for bus ${busId}: ${message}`);
+    }
   }
 }

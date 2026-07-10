@@ -147,6 +147,7 @@ export interface Stop {
   longitude?: number;
   isActive: boolean;
   schoolId: string;
+  school?: School;
   createdAt: string;
   updatedAt: string;
 }

@@ -30,9 +30,16 @@ import {
   PeopleAlt as UsersIcon,
   Build as MaintenanceIcon,
   VerifiedUser as SafetyIcon,
+  PrecisionManufacturing as FleetIcon,
   PendingActions as PendingApprovalsIcon,
   QrCodeScanner as GateScannerIcon,
   Devices as DevicesIcon,
+  FamilyRestroom as FamilyRestroomIcon,
+  LocationOn as LocationOnIcon,
+  History as AuditLogIcon,
+  FileUpload as ExportIcon,
+  Settings as SettingsIcon,
+  QrCode as QrManagementIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
@@ -53,13 +60,16 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
   { label: 'Control Center', path: '/control-center', icon: <ControlCenterIcon /> },
+  { label: 'QR Management', path: '/qr-management', icon: <QrManagementIcon /> },
   { label: 'Students', path: '/students', icon: <StudentsIcon /> },
   { label: 'Pending Approvals', path: '/students/pending-approvals', icon: <PendingApprovalsIcon /> },
   { label: 'Drivers', path: '/drivers', icon: <DriversIcon /> },
   { label: 'Buses', path: '/buses', icon: <BusesIcon /> },
   { label: 'Routes', path: '/routes', icon: <RoutesIcon /> },
+  { label: 'Parents', path: '/parents', icon: <FamilyRestroomIcon /> },
   { label: 'Assignments', path: '/assignments', icon: <AssignmentsIcon /> },
   { label: 'Calendar', path: '/assignments/calendar', icon: <CalendarIcon /> },
+  { label: 'Stops', path: '/stops', icon: <LocationOnIcon /> },
   { label: 'Trips', path: '/trips', icon: <TripsIcon /> },
   { label: 'Attendance', path: '/attendance', icon: <AttendanceIcon /> },
   { label: 'Notifications', path: '/notifications', icon: <NotificationsIcon /> },
@@ -67,11 +77,15 @@ const navItems: NavItem[] = [
   { label: 'Reports', path: '/reports', icon: <ReportsIcon /> },
   { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
   { label: 'Maintenance', path: '/maintenance', icon: <MaintenanceIcon /> },
+  { label: 'Fleet', path: '/fleet', icon: <FleetIcon /> },
   { label: 'Driver Safety', path: '/driver-safety', icon: <SafetyIcon /> },
   { label: 'Devices', path: '/devices', icon: <DevicesIcon /> },
   { label: 'Gate Scanner', path: '/gate-scanner', icon: <GateScannerIcon /> },
   { label: 'Schools', path: '/schools', icon: <SchoolsIcon />, adminOnly: true },
   { label: 'Users', path: '/users', icon: <UsersIcon />, adminOnly: true },
+  { label: 'Audit Logs', path: '/audit-logs', icon: <AuditLogIcon />, adminOnly: true },
+  { label: 'Import/Export', path: '/export', icon: <ExportIcon />, adminOnly: true },
+  { label: 'Settings', path: '/settings', icon: <SettingsIcon />, adminOnly: true },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {

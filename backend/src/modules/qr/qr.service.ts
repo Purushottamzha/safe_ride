@@ -77,137 +77,6 @@ export class QRService {
       }
     }
 
-    if (data.eventId) {
-      const existingByEventId = await this.prisma.tripEvent.findUnique({
-        where: { eventId: data.eventId },
-      });
-      if (existingByEventId) {
-        throw new ConflictException(`Event ${data.eventId} has already been processed`);
-      }
-    }
-
-    const duplicate = await this.prisma.tripEvent.findFirst({
-      where: {
-        tripId: data.tripId,
-        studentId: data.studentId,
-        scanType: data.scanType,
-      },
-    });
-    if (duplicate) {
-      throw new ConflictException(
-        `Student has already been scanned as ${data.scanType === 'BOARD_IN' ? 'boarded' : 'exited'} for this trip`,
-      );
-    }
-
-    const tripEvent = await this.prisma.tripEvent.create({
-      data: {
-        tripId: data.tripId,
-        studentId: data.studentId,
-        scanType: data.scanType,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        eventId: data.eventId,
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            studentId: true,
-            grade: true,
-            section: true,
-          },
-        },
-        trip: {
-          select: { id: true, type: true, status: true, scheduledAt: true },
-        },
-      },
-    });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let isLate = false;
-    let lateMinutes = 0;
-
-    if (data.scanType === 'BOARD_IN') {
-      const scheduledMin = trip.scheduledAt.getHours() * 60 + trip.scheduledAt.getMinutes();
-      const boardMin = new Date().getHours() * 60 + new Date().getMinutes();
-      if (boardMin > scheduledMin + 5) {
-        isLate = true;
-        lateMinutes = boardMin - scheduledMin;
-      }
-
-      const finalStatus: 'PRESENT' | 'LATE' = isLate ? 'LATE' : 'PRESENT';
-
-      await this.prisma.attendance.upsert({
-        where: {
-          studentId_schoolId_date_type: {
-            studentId: data.studentId,
-            schoolId: trip.schoolId,
-            date: today,
-            type: trip.type,
-          },
-        },
-        update: {
-          boardTime: new Date(),
-          boardEventId: tripEvent.id,
-          isLate,
-          lateMinutes,
-          status: finalStatus,
-          tripId: data.tripId,
-        },
-        create: {
-          studentId: data.studentId,
-          tripId: data.tripId,
-          schoolId: trip.schoolId,
-          date: today,
-          type: trip.type,
-          boardTime: new Date(),
-          boardEventId: tripEvent.id,
-          isLate,
-          lateMinutes,
-          status: finalStatus,
-        },
-      });
-    } else if (data.scanType === 'EXIT_OUT') {
-      const attendance = await this.prisma.attendance.findUnique({
-        where: {
-          studentId_schoolId_date_type: {
-            studentId: data.studentId,
-            schoolId: trip.schoolId,
-            date: today,
-            type: trip.type,
-          },
-        },
-      });
-
-      if (attendance) {
-        await this.prisma.attendance.update({
-          where: { id: attendance.id },
-          data: {
-            exitTime: new Date(),
-            exitEventId: tripEvent.id,
-            tripId: data.tripId,
-          },
-        });
-      } else {
-        await this.prisma.attendance.create({
-          data: {
-            studentId: data.studentId,
-            tripId: data.tripId,
-            schoolId: trip.schoolId,
-            date: today,
-            type: trip.type,
-            exitTime: new Date(),
-            exitEventId: tripEvent.id,
-            status: 'PRESENT',
-          },
-        });
-      }
-    }
-
     const parentRelations = await this.prisma.studentParent.findMany({
       where: { studentId: data.studentId },
       include: {
@@ -219,6 +88,139 @@ export class QRService {
     const parentUserIds = parentRelations.map(r => r.parent.userId);
     const studentName = `${student.firstName} ${student.lastName}`;
     const scanLabel = data.scanType === 'BOARD_IN' ? 'boarded' : 'exited';
+
+    // All DB writes in a single transaction to prevent TOCTOU races and orphan records
+    const { tripEvent, isLate, lateMinutes } = await this.prisma.$transaction(async (tx) => {
+      if (data.eventId) {
+        const existingByEventId = await tx.tripEvent.findUnique({
+          where: { eventId: data.eventId },
+        });
+        if (existingByEventId) {
+          throw new ConflictException(`Event ${data.eventId} has already been processed`);
+        }
+      }
+
+      const duplicate = await tx.tripEvent.findFirst({
+        where: {
+          tripId: data.tripId,
+          studentId: data.studentId,
+          scanType: data.scanType,
+        },
+      });
+      if (duplicate) {
+        throw new ConflictException(
+          `Student has already been scanned as ${data.scanType === 'BOARD_IN' ? 'boarded' : 'exited'} for this trip`,
+        );
+      }
+
+      const tripEvent = await tx.tripEvent.create({
+        data: {
+          tripId: data.tripId,
+          studentId: data.studentId,
+          scanType: data.scanType,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          eventId: data.eventId,
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentId: true,
+              grade: true,
+              section: true,
+            },
+          },
+          trip: {
+            select: { id: true, type: true, status: true, scheduledAt: true },
+          },
+        },
+      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let isLate = false;
+      let lateMinutes = 0;
+
+      if (data.scanType === 'BOARD_IN') {
+        const scheduledMin = trip.scheduledAt.getHours() * 60 + trip.scheduledAt.getMinutes();
+        const boardMin = new Date().getHours() * 60 + new Date().getMinutes();
+        isLate = boardMin > scheduledMin + 5;
+        lateMinutes = isLate ? boardMin - scheduledMin : 0;
+        const finalStatus: 'PRESENT' | 'LATE' = isLate ? 'LATE' : 'PRESENT';
+
+        await tx.attendance.upsert({
+          where: {
+            studentId_schoolId_date_type: {
+              studentId: data.studentId,
+              schoolId: trip.schoolId,
+              date: today,
+              type: trip.type,
+            },
+          },
+          update: {
+            boardTime: new Date(),
+            boardEventId: tripEvent.id,
+            isLate,
+            lateMinutes,
+            status: finalStatus,
+            tripId: data.tripId,
+          },
+          create: {
+            studentId: data.studentId,
+            tripId: data.tripId,
+            schoolId: trip.schoolId,
+            date: today,
+            type: trip.type,
+            boardTime: new Date(),
+            boardEventId: tripEvent.id,
+            isLate,
+            lateMinutes,
+            status: finalStatus,
+          },
+        });
+      } else if (data.scanType === 'EXIT_OUT') {
+        const attendance = await tx.attendance.findUnique({
+          where: {
+            studentId_schoolId_date_type: {
+              studentId: data.studentId,
+              schoolId: trip.schoolId,
+              date: today,
+              type: trip.type,
+            },
+          },
+        });
+
+        if (attendance) {
+          await tx.attendance.update({
+            where: { id: attendance.id },
+            data: {
+              exitTime: new Date(),
+              exitEventId: tripEvent.id,
+              tripId: data.tripId,
+            },
+          });
+        } else {
+          await tx.attendance.create({
+            data: {
+              studentId: data.studentId,
+              tripId: data.tripId,
+              schoolId: trip.schoolId,
+              date: today,
+              type: trip.type,
+              exitTime: new Date(),
+              exitEventId: tripEvent.id,
+              status: 'PRESENT',
+            },
+          });
+        }
+      }
+
+      return { tripEvent, isLate, lateMinutes };
+    });
 
     for (const userId of parentUserIds) {
       this.notificationGateway.sendToUser(userId, 'attendance:update', {
