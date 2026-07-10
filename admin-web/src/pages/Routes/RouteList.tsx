@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, IconButton, Tooltip, Alert, Typography } from '@mui/material';
 import { Edit, Delete, Add, Route as RouteIcon } from '@mui/icons-material';
 import DataTable, { type Column } from '../../components/common/DataTable';
@@ -10,15 +11,16 @@ import { routeService } from '../../services/routes';
 import type { Route } from '../../types';
 
 export default function RouteList() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['routes', page, limit],
-    queryFn: () => routeService.list({ page: page + 1, limit }),
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ['routes', page, limit, search],
+    queryFn: () => routeService.list({ page: page + 1, limit, search: search || undefined }),
   });
 
   const deleteMutation = useMutation({
@@ -39,7 +41,7 @@ export default function RouteList() {
       id: 'actions', label: 'Actions', width: 100,
       render: (row) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Edit"><IconButton size="small"><Edit fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Edit"><IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/routes/${row.id}`); }}><Edit fontSize="small" /></IconButton></Tooltip>
           <Tooltip title="Delete"><IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteId(row.id); }}><Delete fontSize="small" /></IconButton></Tooltip>
         </Box>
       ),
@@ -49,7 +51,8 @@ export default function RouteList() {
   return (
     <Box>
       <PageHeader title="Routes" subtitle={`${total} total routes`}
-        actions={[{ label: 'Add Route', variant: 'contained', icon: <Add /> }]} />
+        actions={[{ label: 'Add Route', variant: 'contained', icon: <Add />, to: '/routes/new' }]} />
+      {isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to load routes: {(error as any)?.message}</Alert>}
       {deleteMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to delete route</Alert>}
       <DataTable columns={columns} data={routes} total={total} page={page} limit={limit}
         loading={isLoading} search={search}

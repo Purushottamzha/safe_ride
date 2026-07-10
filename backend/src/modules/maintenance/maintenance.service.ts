@@ -6,9 +6,12 @@ import { MaintenanceType, MaintenancePriority, ServiceStatus, InspectionResult, 
 export class MaintenanceService {
   constructor(private prisma: PrismaService) {}
 
-  async getVehicleHealth(schoolId: string) {
+  async getVehicleHealth(schoolId?: string) {
     const buses = await this.prisma.bus.findMany({
-      where: { schoolId, deletedAt: null },
+      where: {
+        ...(schoolId ? { schoolId } : {}),
+        deletedAt: null,
+      },
       include: {
         maintenanceRecords: {
           orderBy: { completedAt: 'desc' },
@@ -60,9 +63,9 @@ export class MaintenanceService {
     });
   }
 
-  async getServiceSchedules(schoolId: string) {
+  async getServiceSchedules(schoolId?: string) {
     const schedules = await this.prisma.serviceSchedule.findMany({
-      where: { schoolId },
+      where: schoolId ? { schoolId } : {},
       include: { bus: { select: { busNumber: true, plateNumber: true } } },
       orderBy: { scheduledAt: 'asc' },
     });
@@ -78,9 +81,9 @@ export class MaintenanceService {
     }));
   }
 
-  async getInspections(schoolId: string) {
+  async getInspections(schoolId?: string) {
     const inspections = await this.prisma.inspection.findMany({
-      where: { schoolId },
+      where: schoolId ? { schoolId } : {},
       include: { bus: { select: { busNumber: true, plateNumber: true } } },
       orderBy: { date: 'desc' },
     });
@@ -111,8 +114,9 @@ export class MaintenanceService {
     });
   }
 
-  async getMaintenanceRecords(schoolId: string, busId?: string) {
-    const where: Prisma.MaintenanceRecordWhereInput = { schoolId };
+  async getMaintenanceRecords(schoolId?: string, busId?: string) {
+    const where: Prisma.MaintenanceRecordWhereInput = {};
+    if (schoolId) where.schoolId = schoolId;
     if (busId) where.busId = busId;
     return this.prisma.maintenanceRecord.findMany({
       where,
@@ -180,8 +184,9 @@ export class MaintenanceService {
     return this.prisma.fuelLog.create({ data });
   }
 
-  async getFuelLogs(schoolId: string, busId?: string) {
-    const where: Prisma.FuelLogWhereInput = { schoolId };
+  async getFuelLogs(schoolId?: string, busId?: string) {
+    const where: Prisma.FuelLogWhereInput = {};
+    if (schoolId) where.schoolId = schoolId;
     if (busId) where.busId = busId;
     return this.prisma.fuelLog.findMany({
       where,
@@ -206,9 +211,9 @@ export class MaintenanceService {
     });
   }
 
-  async getInsurancePolicies(schoolId: string) {
+  async getInsurancePolicies(schoolId?: string) {
     return this.prisma.insurancePolicy.findMany({
-      where: { schoolId },
+      where: schoolId ? { schoolId } : {},
       include: { bus: { select: { id: true, busNumber: true, plateNumber: true } } },
       orderBy: { expiryDate: 'asc' },
     });
@@ -231,9 +236,9 @@ export class MaintenanceService {
     });
   }
 
-  async getVehicleDocuments(schoolId: string) {
+  async getVehicleDocuments(schoolId?: string) {
     return this.prisma.vehicleDocument.findMany({
-      where: { schoolId },
+      where: schoolId ? { schoolId } : {},
       include: { bus: { select: { id: true, busNumber: true, plateNumber: true } } },
       orderBy: { expiryDate: 'asc' },
     });
@@ -241,9 +246,9 @@ export class MaintenanceService {
 
   // ── Service Reminders ────────────────────────────────────────────────
 
-  async getServiceReminders(schoolId: string) {
+  async getServiceReminders(schoolId?: string) {
     return this.prisma.serviceReminder.findMany({
-      where: { schoolId, isActive: true },
+      where: { ...(schoolId ? { schoolId } : {}), isActive: true },
       include: { bus: { select: { id: true, busNumber: true, plateNumber: true } } },
       orderBy: { dueDate: 'asc' },
     });
@@ -251,21 +256,22 @@ export class MaintenanceService {
 
   // ── Fleet Dashboard ──────────────────────────────────────────────────
 
-  async getFleetDashboard(schoolId: string) {
+  async getFleetDashboard(schoolId?: string) {
     const now = new Date();
     const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const where = schoolId ? { schoolId } : {};
 
     const [
       buses, activeMaintenance, upcomingServices, expiringInsurance,
       expiringDocuments, totalFuelSpend, activeReminders,
     ] = await Promise.all([
-      this.prisma.bus.count({ where: { schoolId, deletedAt: null } }),
-      this.prisma.maintenanceRecord.count({ where: { schoolId, status: { in: ['IN_PROGRESS', 'SCHEDULED'] } } }),
-      this.prisma.serviceSchedule.count({ where: { schoolId, scheduledAt: { lte: thirtyDays }, status: { not: 'COMPLETED' } } }),
-      this.prisma.insurancePolicy.count({ where: { schoolId, expiryDate: { lte: thirtyDays, gte: now } } }),
-      this.prisma.vehicleDocument.count({ where: { schoolId, expiryDate: { lte: thirtyDays, gte: now } } }),
-      this.prisma.fuelLog.aggregate({ where: { schoolId }, _sum: { totalCost: true } }),
-      this.prisma.serviceReminder.count({ where: { schoolId, isActive: true, dueDate: { lte: thirtyDays } } }),
+      this.prisma.bus.count({ where: { ...where, deletedAt: null } }),
+      this.prisma.maintenanceRecord.count({ where: { ...where, status: { in: ['IN_PROGRESS', 'SCHEDULED'] } } }),
+      this.prisma.serviceSchedule.count({ where: { ...where, scheduledAt: { lte: thirtyDays }, status: { not: 'COMPLETED' } } }),
+      this.prisma.insurancePolicy.count({ where: { ...where, expiryDate: { lte: thirtyDays, gte: now } } }),
+      this.prisma.vehicleDocument.count({ where: { ...where, expiryDate: { lte: thirtyDays, gte: now } } }),
+      this.prisma.fuelLog.aggregate({ where: where, _sum: { totalCost: true } }),
+      this.prisma.serviceReminder.count({ where: { ...where, isActive: true, dueDate: { lte: thirtyDays } } }),
     ]);
 
     return {

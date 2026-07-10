@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, IconButton, Tooltip, Chip, Alert } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import DataTable, { type Column } from '../../components/common/DataTable';
@@ -10,6 +11,7 @@ import { userService } from '../../services/users';
 import type { User } from '../../types';
 
 export default function UserList() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -39,7 +41,7 @@ export default function UserList() {
       id: 'actions', label: 'Actions', width: 100,
       render: (row) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Edit"><IconButton size="small"><Edit fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Edit"><IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/users/${row.id}`); }}><Edit fontSize="small" /></IconButton></Tooltip>
           <Tooltip title="Delete"><IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteId(row.id); }}><Delete fontSize="small" /></IconButton></Tooltip>
         </Box>
       ),

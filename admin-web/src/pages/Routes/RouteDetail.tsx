@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Alert, Box, Button, Card, CardContent, Chip, Divider, Grid, Skeleton, Stack, Typography,
 } from '@mui/material';
-import { Edit, Route as RouteIcon, Speed, CalendarMonth, Refresh, School, LocationOn } from '@mui/icons-material';
+import { Route as RouteIcon, Speed, Refresh, School } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import { routeService } from '../../services/routes';
@@ -72,7 +72,6 @@ export default function RouteDetail() {
         title={route.name}
         subtitle={`Code: ${route.code} - ${route.school?.name ?? ''}`}
         showBack backTo="/routes"
-        actions={[{ label: 'Edit', variant: 'outlined', icon: <Edit /> }]}
       />
 
       <Grid container spacing={3}>

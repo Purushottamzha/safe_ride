@@ -24,13 +24,15 @@ export const attendanceService = {
     return response.data;
   },
 
-  getToday: async (): Promise<Attendance[]> => {
-    const response = await api.get<Attendance[]>('/attendance/today');
+  getToday: async (studentId?: string): Promise<Attendance[]> => {
+    const response = await api.get<Attendance[]>('/attendance/today', { params: { studentId } });
     return response.data;
   },
 
-  getMonthly: async (year: number, month: number, studentId?: string): Promise<Attendance[]> => {
-    const response = await api.get<Attendance[]>('/attendance/monthly', { params: { year, month, studentId } });
+  getMonthly: async (year: number, month: number, studentId?: string, schoolId?: string): Promise<any> => {
+    const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+    const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    const response = await api.get<any>(`/attendance/range/${schoolId || ''}`, { params: { startDate, endDate } });
     return response.data;
   },
 };

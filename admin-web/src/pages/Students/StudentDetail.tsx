@@ -330,7 +330,7 @@ export default function StudentDetail() {
                     >
                       {regenerateQrMutation.isPending ? 'Reissuing...' : 'Reissue QR'}
                     </Button>
-                    <Button fullWidth variant="outlined" disabled startIcon={<Print />}>
+                    <Button fullWidth variant="outlined" startIcon={<Print />} onClick={() => window.open(`/api/v1/qr/print/${id}`, '_blank')}>
                       Print
                     </Button>
                   </Stack>

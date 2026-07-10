@@ -74,6 +74,7 @@ export default function UserDetail() {
         title={`${user.firstName} ${user.lastName}`}
         subtitle={user.email}
         showBack backTo="/users"
+        actions={[{ label: 'Edit', variant: 'outlined', icon: <Edit />, onClick: () => navigate(`/users/${id}/edit`) }]}
       />
 
       <Grid container spacing={3}>

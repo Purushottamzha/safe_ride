@@ -102,7 +102,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - osrm-data:/data
+      - ./docker/osrm/data:/data
     command: osrm-routed --algorithm mld /data/nepal-latest.osrm
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]

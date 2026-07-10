@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, IconButton, Tooltip, Alert } from '@mui/material';
 import { Edit, Delete, Add } from '@mui/icons-material';
 import DataTable, { type Column } from '../../components/common/DataTable';
@@ -10,6 +11,7 @@ import { assignmentService } from '../../services/assignments';
 import type { Assignment } from '../../types';
 
 export default function AssignmentList() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -39,7 +41,7 @@ export default function AssignmentList() {
       id: 'actions', label: 'Actions', width: 100,
       render: (row) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <Tooltip title="Edit"><IconButton size="small"><Edit fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Edit"><IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/assignments/${row.id}/edit`); }}><Edit fontSize="small" /></IconButton></Tooltip>
           <Tooltip title="Delete"><IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); setDeleteId(row.id); }}><Delete fontSize="small" /></IconButton></Tooltip>
         </Box>
       ),
@@ -49,7 +51,7 @@ export default function AssignmentList() {
   return (
     <Box>
       <PageHeader title="Assignments" subtitle={`${total} total assignments`}
-        actions={[{ label: 'Add Assignment', variant: 'contained', icon: <Add /> }]} />
+        actions={[{ label: 'Add Assignment', variant: 'contained', icon: <Add />, onClick: () => navigate('/assignments/new') }]} />
       {deleteMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to delete assignment</Alert>}
       <DataTable columns={columns} data={assignments} total={total} page={page} limit={limit}
         loading={isLoading} hideSearch

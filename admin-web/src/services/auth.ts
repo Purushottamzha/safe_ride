@@ -34,7 +34,7 @@ export const authService = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    await api.put('/auth/change-password', { currentPassword, newPassword });
+    await api.post('/auth/change-password', { currentPassword, newPassword });
   },
 
   logout: async (): Promise<void> => {

@@ -3,10 +3,10 @@ import { PrismaService } from '../../database/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { createWriteStream } from 'fs';
 import * as QRCode from 'qrcode';
-import { ZipArchive } from 'archiver';
 import { Response } from 'express';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const archiver = require('archiver');
 
 const QR_STORAGE = path.resolve('storage/qrcodes');
 const QR_PAYLOAD_VERSION = 1;
@@ -191,7 +191,6 @@ export class QRManagementService {
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    const stream = createWriteStream(filepath);
     const data = await fs.readFile(filepath);
     res.send(data);
   }
@@ -212,7 +211,7 @@ export class QRManagementService {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="qrcodes.zip"');
 
-    const archive = new ZipArchive({ zlib: { level: 6 } });
+    const archive = archiver('zip', { zlib: { level: 6 } });
     archive.pipe(res);
 
     for (const student of students) {

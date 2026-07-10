@@ -5,13 +5,17 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('Parents')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('parents')
 export class ParentsController {
-  constructor(private readonly parentsService: ParentsService) {}
+  constructor(
+    private readonly parentsService: ParentsService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Get('me/children')
   @Roles('PARENT')
@@ -42,14 +46,23 @@ export class ParentsController {
   @Post()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Create a parent' })
-  async create(@Body() data: { userId: string; emergencyContact?: boolean }) {
-    return this.parentsService.create(data);
+  async create(@Body() data: { email: string; firstName: string; lastName: string; phone?: string; emergencyContact?: boolean; schoolId: string }) {
+    const user = await this.authService.register({
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+      password: 'Parent@123',
+      schoolId: data.schoolId,
+      role: 'PARENT' as never,
+    });
+    return this.parentsService.create({ userId: user.user.id, emergencyContact: data.emergencyContact });
   }
 
   @Put(':id')
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Update parent' })
-  async update(@Param('id') id: string, @Body() data: { emergencyContact?: boolean }) {
+  async update(@Param('id') id: string, @Body() data: { firstName?: string; lastName?: string; phone?: string; emergencyContact?: boolean }) {
     return this.parentsService.update(id, data);
   }
 

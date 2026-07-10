@@ -19,7 +19,7 @@ export const notificationService = {
   },
 
   markAllRead: async (): Promise<void> => {
-    await api.put('/notifications/read-all');
+    await api.put('/notifications/mark-all-read');
   },
 
   getUnreadCount: async (): Promise<{ count: number }> => {

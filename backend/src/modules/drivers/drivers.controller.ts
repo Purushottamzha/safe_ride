@@ -4,13 +4,17 @@ import { DriversService } from './drivers.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('Drivers')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('drivers')
 export class DriversController {
-  constructor(private readonly driversService: DriversService) {}
+  constructor(
+    private readonly driversService: DriversService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Get()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
@@ -44,15 +48,35 @@ export class DriversController {
   async create(
     @Body()
     data: {
-      userId: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      phone?: string;
       licenseNumber: string;
       licenseExpiry: string;
+      isAvailable?: boolean;
       emergencyContact?: string;
       medicalNotes?: string;
       schoolId: string;
     },
   ) {
-    return this.driversService.create(data);
+    const user = await this.authService.register({
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+      password: 'Driver@123',
+      schoolId: data.schoolId,
+      role: 'DRIVER' as never,
+    });
+    return this.driversService.create({
+      userId: user.user.id,
+      licenseNumber: data.licenseNumber,
+      licenseExpiry: data.licenseExpiry,
+      emergencyContact: data.emergencyContact,
+      medicalNotes: data.medicalNotes,
+      schoolId: data.schoolId,
+    });
   }
 
   @Put(':id')

@@ -4,6 +4,7 @@ import type { Route, PaginatedResponse } from '../types';
 export interface RouteFilters {
   page?: number;
   limit?: number;
+  search?: string;
   schoolId?: string;
 }
 

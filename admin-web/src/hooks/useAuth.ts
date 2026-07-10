@@ -1,12 +1,14 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../services/auth';
 import type { LoginCredentials } from '../types';
 
+function navigate(path: string) {
+  window.location.href = path;
+}
+
 export function useAuth() {
-  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, login: storeLogin, logout: storeLogout, setLoading } = useAuthStore();
 
   const loginMutation = useMutation({
@@ -21,7 +23,7 @@ export function useAuth() {
     await authService.logout();
     storeLogout();
     navigate('/login');
-  }, [storeLogout, navigate]);
+  }, [storeLogout]);
 
   const loadUser = useCallback(async () => {
     if (!useAuthStore.getState().accessToken) {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Button, Grid, TextField, MenuItem, Alert, Chip, Divider,
 } from '@mui/material';
@@ -11,6 +12,7 @@ const GRADES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 const SECTIONS = ['A', 'B', 'C', 'D', 'E'];
 
 export default function ExportQR() {
+  const navigate = useNavigate();
   const [grade, setGrade] = useState('');
   const [section, setSection] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -61,7 +63,7 @@ export default function ExportQR() {
                   <Button variant="contained" startIcon={<Archive />} onClick={handleExportZip} disabled={exporting} size="large">
                     {exporting ? 'Exporting...' : 'Download as ZIP'}
                   </Button>
-                  <Button variant="outlined" startIcon={<Image />} disabled size="large">
+                  <Button variant="outlined" startIcon={<Image />} size="large" onClick={() => navigate('/qr/student')}>
                     Download as PNG (Individual)
                   </Button>
                 </Box>

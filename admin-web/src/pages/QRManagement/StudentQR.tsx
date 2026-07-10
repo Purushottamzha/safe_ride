@@ -50,12 +50,15 @@ export default function StudentQR() {
   const handlePreview = async (studentId: string) => {
     try {
       const info = await qrManagementService.getStudentQR(studentId);
-      const blob = await fetch(qrManagementService.downloadQR(studentId)).then(r => r.blob());
-      const qrImage = URL.createObjectURL(blob);
+      let qrImage = '';
+      if (info.qrExists) {
+        const blob = await qrManagementService.downloadQR(studentId);
+        qrImage = URL.createObjectURL(blob);
+      }
       setPreviewData({
         student: info.student,
         qrPayload: info.qrPayload,
-        qrImage: info.qrExists ? qrImage : '',
+        qrImage,
         qrGeneratedAt: info.qrGeneratedAt,
         qrVersion: info.qrVersion,
       });
@@ -63,8 +66,18 @@ export default function StudentQR() {
     } catch {}
   };
 
-  const handleDownload = (studentId: string) => {
-    window.open(qrManagementService.downloadQR(studentId), '_blank');
+  const handleDownload = async (studentId: string) => {
+    try {
+      const blob = await qrManagementService.downloadQR(studentId);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${studentId}.png`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {}
   };
 
   const handlePrint = (studentId: string) => {

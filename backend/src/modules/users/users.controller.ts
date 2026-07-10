@@ -1,16 +1,20 @@
-import { Controller, Get, Put, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { AuthService } from '../auth/auth.service';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Get()
   @Roles('SUPER_ADMIN', 'SCHOOL_ADMIN')
@@ -31,6 +35,13 @@ export class UsersController {
       status: status as never,
       schoolId,
     });
+  }
+
+  @Post()
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Create a new user' })
+  async create(@Body() data: { email: string; password: string; firstName: string; lastName: string; phone?: string; role: string; schoolId?: string }) {
+    return this.authService.register(data as never);
   }
 
   @Get(':id')

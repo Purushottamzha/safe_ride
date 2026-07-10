@@ -6,6 +6,7 @@ import DataTable, { type Column } from '../../components/common/DataTable';
 import PageHeader from '../../components/common/PageHeader';
 import StatusBadge from '../../components/common/StatusBadge';
 import { attendanceService } from '../../services/attendance';
+import { exportService } from '../../services/export';
 import type { Attendance } from '../../types';
 
 export default function AttendanceList() {
@@ -60,7 +61,14 @@ export default function AttendanceList() {
         title="Attendance"
         subtitle={`${total} total records`}
         actions={[
-          { label: 'Export CSV', variant: 'outlined', icon: <Download />, onClick: () => {} },
+          { label: 'Export CSV', variant: 'outlined', icon: <Download />, onClick: async () => {
+            try {
+              const blob = await exportService.exportCsv('attendance', { fromDate: dateFilter || undefined, toDate: dateFilter || undefined });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a'); a.href = url; a.download = 'attendance-export.csv'; a.click();
+              window.URL.revokeObjectURL(url);
+            } catch { /* ignore */ }
+          } },
         ]}
       />
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>

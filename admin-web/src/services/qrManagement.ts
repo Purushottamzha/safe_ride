@@ -26,9 +26,13 @@ export const qrManagementService = {
     return res.data;
   },
 
-  downloadQR: (studentId: string): string => {
-    const token = JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken;
-    return `/api/v1/qr/download/${studentId}?token=${token}`;
+  downloadQR: async (studentId: string): Promise<Blob> => {
+    const res = await api.get(`/qr/download/${studentId}`, { responseType: 'blob' });
+    return res.data;
+  },
+
+  getDownloadURL: (studentId: string): string => {
+    return `/api/v1/qr/download/${studentId}`;
   },
 
   downloadBulkZip: async (filters: Record<string, any>): Promise<void> => {

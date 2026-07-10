@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   IconButton,
@@ -24,6 +25,7 @@ import { incidentService } from '../../services/incidents';
 import type { Incident } from '../../types';
 
 export default function IncidentList() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
@@ -68,8 +70,8 @@ export default function IncidentList() {
       id: 'actions', label: 'Actions', width: 140,
       render: (row) => (
         <Box sx={{ display: 'flex', gap: 0.25 }}>
-          <Tooltip title="View"><IconButton size="small"><Visibility fontSize="small" /></IconButton></Tooltip>
-          <Tooltip title="Edit"><IconButton size="small"><Edit fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="View"><IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/incidents/${row.id}`); }}><Visibility fontSize="small" /></IconButton></Tooltip>
+          <Tooltip title="Edit"><IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate(`/incidents/${row.id}`); }}><Edit fontSize="small" /></IconButton></Tooltip>
           {(row.status === 'REPORTED' || row.status === 'INVESTIGATING') && (
             <Tooltip title="Resolve">
               <IconButton size="small" color="success" onClick={(e) => { e.stopPropagation(); setResolveDialog(row.id); }}>
@@ -90,7 +92,7 @@ export default function IncidentList() {
   return (
     <Box>
       <PageHeader title="Incidents" subtitle={`${total} total incidents`}
-        actions={[{ label: 'Report Incident', variant: 'contained', icon: <Add /> }]} />
+        actions={[{ label: 'Report Incident', variant: 'contained', icon: <Add />, onClick: () => navigate('/incidents/new') }]} />
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <TextField select size="small" label="Status" value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(0); }} sx={{ minWidth: 140 }}>

@@ -279,10 +279,28 @@ export class ParentsService {
     });
   }
 
-  async update(id: string, data: { emergencyContact?: boolean }) {
+  async update(id: string, data: { firstName?: string; lastName?: string; phone?: string; emergencyContact?: boolean }) {
     const parent = await this.prisma.parent.findFirst({ where: { id, deletedAt: null } });
     if (!parent) throw new NotFoundException('Parent not found');
-    return this.prisma.parent.update({ where: { id }, data });
+    const { firstName, lastName, phone, ...parentData } = data;
+    if (firstName || lastName || phone) {
+      await this.prisma.user.update({
+        where: { id: parent.userId },
+        data: { ...(firstName && { firstName }), ...(lastName && { lastName }), ...(phone && { phone }) },
+      });
+    }
+    return this.prisma.parent.update({
+      where: { id },
+      data: parentData,
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+        studentParents: {
+          include: {
+            student: { select: { id: true, firstName: true, lastName: true, studentId: true, grade: true } },
+          },
+        },
+      },
+    });
   }
 
   async linkStudent(parentId: string, studentId: string, relation: string, isPrimary?: boolean) {

@@ -41,6 +41,8 @@ import StopEdit from './pages/Stops/StopEdit';
 
 // Assignments
 import AssignmentList from './pages/Assignments/AssignmentList';
+import AssignmentCreate from './pages/Assignments/AssignmentCreate';
+import AssignmentEdit from './pages/Assignments/AssignmentEdit';
 import AssignmentCalendar from './pages/Assignments/AssignmentCalendar';
 
 // Trips
@@ -135,6 +137,8 @@ export function createRouter(isAuthenticated: boolean) {
         { path: 'stops/:id', element: <StopDetail /> },
         { path: 'stops/:id/edit', element: <StopEdit /> },
         { path: 'assignments', element: <AssignmentList /> },
+        { path: 'assignments/new', element: <AssignmentCreate /> },
+        { path: 'assignments/:id/edit', element: <AssignmentEdit /> },
         { path: 'assignments/calendar', element: <AssignmentCalendar /> },
         { path: 'trips', element: <TripList /> },
         { path: 'trips/new', element: <TripCreate /> },
