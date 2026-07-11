@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Alert, Box, Button, Card, CardContent, Chip, Divider, Grid, Skeleton, Stack, Typography,
+  Alert, Box, Button, Chip, Divider, Grid, Skeleton, Stack, Typography,
 } from '@mui/material';
 import { Edit, DirectionsBus, Speed, CalendarMonth, Refresh, School } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import { busService } from '../../services/buses';
 import type { Bus } from '../../types';
@@ -78,39 +79,37 @@ export default function BusDetail() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25, mb: 2.5 }}>
-                <Box sx={{
-                  width: 72, height: 72, borderRadius: 2,
-                  background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <DirectionsBus sx={{ fontSize: 36, color: '#fff' }} />
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>Bus {bus.busNumber}</Typography>
-                  <Typography variant="body2" color="text.secondary">{bus.plateNumber}</Typography>
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    <StatusBadge status={bus.status?.toLowerCase() ?? 'active'} />
-                  </Stack>
-                </Box>
+          <GlassCard>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25, mb: 2.5 }}>
+              <Box sx={{
+                width: 72, height: 72, borderRadius: 2,
+                background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <DirectionsBus sx={{ fontSize: 36, color: '#fff' }} />
               </Box>
-              <Divider sx={{ mb: 2.5 }} />
-              <Stack spacing={2}>
-                <InfoLine icon={<DirectionsBus fontSize="small" />} label="Bus Number" value={bus.busNumber} />
-                <InfoLine icon={<DirectionsBus fontSize="small" />} label="Plate Number" value={bus.plateNumber} />
-                <InfoLine icon={<Speed fontSize="small" />} label="Model" value={bus.model || '-'} />
-                <InfoLine icon={<Speed fontSize="small" />} label="Capacity" value={`${bus.capacity} passengers`} />
-                <InfoLine icon={<CalendarMonth fontSize="small" />} label="Year" value={bus.year?.toString() || '-'} />
-                <InfoLine icon={<Speed fontSize="small" />} label="Color" value={bus.color || '-'} />
-                <InfoLine icon={<School fontSize="small" />} label="School" value={bus.school?.name} />
-                {bus.lastGpsLat && bus.lastGpsLng && (
-                  <InfoLine icon={<Speed fontSize="small" />} label="Last GPS" value={`${bus.lastGpsLat.toFixed(4)}, ${bus.lastGpsLng.toFixed(4)}`} />
-                )}
-              </Stack>
-            </CardContent>
-          </Card>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>Bus {bus.busNumber}</Typography>
+                <Typography variant="body2" color="text.secondary">{bus.plateNumber}</Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                  <StatusBadge status={bus.status?.toLowerCase() ?? 'active'} />
+                </Stack>
+              </Box>
+            </Box>
+            <Divider sx={{ mb: 2.5 }} />
+            <Stack spacing={2}>
+              <InfoLine icon={<DirectionsBus fontSize="small" />} label="Bus Number" value={bus.busNumber} />
+              <InfoLine icon={<DirectionsBus fontSize="small" />} label="Plate Number" value={bus.plateNumber} />
+              <InfoLine icon={<Speed fontSize="small" />} label="Model" value={bus.model || '-'} />
+              <InfoLine icon={<Speed fontSize="small" />} label="Capacity" value={`${bus.capacity} passengers`} />
+              <InfoLine icon={<CalendarMonth fontSize="small" />} label="Year" value={bus.year?.toString() || '-'} />
+              <InfoLine icon={<Speed fontSize="small" />} label="Color" value={bus.color || '-'} />
+              <InfoLine icon={<School fontSize="small" />} label="School" value={bus.school?.name} />
+              {bus.lastGpsLat && bus.lastGpsLng && (
+                <InfoLine icon={<Speed fontSize="small" />} label="Last GPS" value={`${bus.lastGpsLat.toFixed(4)}, ${bus.lastGpsLng.toFixed(4)}`} />
+              )}
+            </Stack>
+          </GlassCard>
         </Grid>
       </Grid>
     </Box>

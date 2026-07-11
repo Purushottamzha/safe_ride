@@ -3,9 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Grid, Card, CardContent, TextField, MenuItem, Alert, CircularProgress } from '@mui/material';
+import { Box, Grid, TextField, MenuItem, Alert, CircularProgress } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import { busService, type UpdateBusPayload } from '../../services/buses';
 
 const busSchema = z.object({
@@ -70,7 +71,7 @@ export default function BusEdit() {
     return (
       <Box>
         <PageHeader title="Loading..." showBack backTo="/buses" />
-        <Card><CardContent sx={{ p: 3, textAlign: 'center' }}><CircularProgress /></CardContent></Card>
+        <GlassCard sx={{ textAlign: 'center', py: 4 }}><CircularProgress /></GlassCard>
       </Box>
     );
   }
@@ -87,46 +88,44 @@ export default function BusEdit() {
   return (
     <Box>
       <PageHeader title="Edit Bus" subtitle={`Bus ${bus.busNumber}`} showBack backTo={`/buses/${id}`} />
-      <Card>
-        <CardContent sx={{ p: 3 }}>
-          {updateMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to update bus</Alert>}
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Grid container spacing={2.5}>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Bus Number" error={!!errors.busNumber} helperText={errors.busNumber?.message} {...register('busNumber')} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Plate Number" error={!!errors.plateNumber} helperText={errors.plateNumber?.message} {...register('plateNumber')} />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField fullWidth label="Capacity" type="number" error={!!errors.capacity} helperText={errors.capacity?.message} {...register('capacity')} />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField fullWidth label="Year" type="number" error={!!errors.year} helperText={errors.year?.message} {...register('year')} />
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <TextField fullWidth label="Color" error={!!errors.color} helperText={errors.color?.message} {...register('color')} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Model" error={!!errors.model} helperText={errors.model?.message} {...register('model')} />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField fullWidth label="Status" select error={!!errors.status} helperText={errors.status?.message} {...register('status')}>
-                  <MenuItem value="ACTIVE">Active</MenuItem>
-                  <MenuItem value="MAINTENANCE">Maintenance</MenuItem>
-                  <MenuItem value="INACTIVE">Inactive</MenuItem>
-                  <MenuItem value="RETIRED">Retired</MenuItem>
-                </TextField>
-              </Grid>
+      <GlassCard>
+        {updateMutation.isError && <Alert severity="error" sx={{ mb: 2 }}>Failed to update bus</Alert>}
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <Grid container spacing={2.5}>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Bus Number" error={!!errors.busNumber} helperText={errors.busNumber?.message} {...register('busNumber')} />
             </Grid>
-            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end', mt: 3 }}>
-              <LoadingButton variant="outlined" color="inherit" onClick={() => navigate(`/buses/${id}`)}>Cancel</LoadingButton>
-              <LoadingButton type="submit" variant="contained" loading={updateMutation.isPending}
-                loadingIndicator={<CircularProgress size={18} color="inherit" />}>Save Changes</LoadingButton>
-            </Box>
-          </form>
-        </CardContent>
-      </Card>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Plate Number" error={!!errors.plateNumber} helperText={errors.plateNumber?.message} {...register('plateNumber')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Capacity" type="number" error={!!errors.capacity} helperText={errors.capacity?.message} {...register('capacity')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Year" type="number" error={!!errors.year} helperText={errors.year?.message} {...register('year')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Color" error={!!errors.color} helperText={errors.color?.message} {...register('color')} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Model" error={!!errors.model} helperText={errors.model?.message} {...register('model')} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Status" select error={!!errors.status} helperText={errors.status?.message} {...register('status')}>
+                <MenuItem value="ACTIVE">Active</MenuItem>
+                <MenuItem value="MAINTENANCE">Maintenance</MenuItem>
+                <MenuItem value="INACTIVE">Inactive</MenuItem>
+                <MenuItem value="RETIRED">Retired</MenuItem>
+              </TextField>
+            </Grid>
+          </Grid>
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end', mt: 3 }}>
+            <LoadingButton variant="outlined" color="inherit" onClick={() => navigate(`/buses/${id}`)}>Cancel</LoadingButton>
+            <LoadingButton type="submit" variant="contained" loading={updateMutation.isPending}
+              loadingIndicator={<CircularProgress size={18} color="inherit" />}>Save Changes</LoadingButton>
+          </Box>
+        </form>
+      </GlassCard>
     </Box>
   );
 }

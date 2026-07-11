@@ -40,6 +40,9 @@ import {
   FileUpload as ExportIcon,
   Settings as SettingsIcon,
   QrCode as QrManagementIcon,
+  TodayOutlined as DailyOpsIcon,
+  WaterDrop as KathmanduIcon,
+  HowToReg as WorkflowIcon,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
@@ -59,6 +62,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', path: '/dashboard', icon: <DashboardIcon /> },
+  { label: 'Daily Operations', path: '/daily-operations', icon: <DailyOpsIcon /> },
+  { label: 'Admission Workflow', path: '/admission-workflow', icon: <WorkflowIcon /> },
+  { label: 'Kathmandu Tools', path: '/kathmandu-tools', icon: <KathmanduIcon /> },
   { label: 'Control Center', path: '/control-center', icon: <ControlCenterIcon /> },
   { label: 'QR Management', path: '/qr-management', icon: <QrManagementIcon /> },
   { label: 'Students', path: '/students', icon: <StudentsIcon /> },

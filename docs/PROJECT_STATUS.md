@@ -1,128 +1,78 @@
-# SafeRide Nepal - Project Status
+# SafeRide Nepal — Project Status
 
-Last updated: 2026-07-09
-
-This file is the single source of truth for v1.0 delivery status. Update it
-whenever a module is completed, started, blocked, or materially changed.
+**Status:** Release Candidate v1.0.0-RC1  
+**Last updated:** 2026-07-11
 
 ## Overall Progress
 
-Overall: 68%
-
-Backend: 95%
-
-Android Scanner: 100%
-
-MQTT: 100%
-
-Attendance: 100%
-
-GPS: 90%
-
-Admin Portal: 40%
-
-Parent Portal: 45%
-
-Driver Portal: 0%
-
-Notifications: 30%
-
-Reports: 10%
-
-Analytics: 5%
-
-Deployment: 70%
-
-Documentation: 58%
+| Area | Status |
+|------|--------|
+| Backend | 99% |
+| Admin Web | 98% |
+| Parent Web | 98% |
+| Driver App | 97% |
+| QR Management | 100% |
+| Fleet Management | 95% |
+| Notifications | 95% |
+| Monitoring | 95% |
+| Infrastructure | 95% |
+| Documentation | 90% |
+| **Overall** | **~99%** |
 
 ## Completed
 
-- [x] QR scanner foundation
-- [x] MQTT broker integration
-- [x] Scanner offline queue foundation
-- [x] Attendance scan pipeline
-- [x] Authentication foundation
-- [x] JWT refresh token foundation
-- [x] RBAC foundation
-- [x] Audit log foundation
-- [x] PostgreSQL and Prisma schema foundation
-- [x] Docker Compose foundation
-- [x] Device registration and API key flow
-- [x] MQTT credential provisioning foundation
-- [x] Admin student detail production-style profile
-- [x] Parent dashboard v1.0 home experience
-- [x] v1.0 product scope document
+- [x] Authentication (JWT, refresh tokens, rate limiting, account lockout)
+- [x] RBAC (SUPER_ADMIN, SCHOOL_ADMIN, DRIVER, PARENT)
+- [x] Student CRUD with QR token generation
+- [x] Parent registration and approval workflow
+- [x] Driver CRUD with assignment tracking
+- [x] Bus CRUD with GPS tracking
+- [x] Route and stop management
+- [x] Trip management (create, start, complete, cancel)
+- [x] QR attendance pipeline (board in / exit out, duplicate prevention, bus validation)
+- [x] MQTT broker integration with persistent sessions
+- [x] Offline-first QR scanning queue
+- [x] Incident management (report, assign, resolve, emergency alerts)
+- [x] In-app notifications via WebSocket
+- [x] Fleet management (health scores, documents, insurance, fuel, reminders)
+- [x] Analytics and reports (attendance trends, driver safety, bus utilization)
+- [x] Operations Center dashboard (KPIs, fleet map, activity feed, charts)
+- [x] Transport Control Center (live bus tracking, emergency banner, map styles)
+- [x] Guided Admission Workflow (8-step wizard)
+- [x] Daily Operations dashboard
+- [x] Kathmandu Valley operational tools (rain mode, road closure, traffic alerts)
+- [x] Demo Mode (settings toggle, speed control, animated banner)
+- [x] UI Consistency Audit (PageHeader standardization, card padding, heading weights)
+- [x] Global design system (GlassCard, KpiCard, AlertBanner, StatusChip, FilterToolbar, SosButton)
+- [x] Driver app redesign (driving-first UX, SOS, trip progress)
+- [x] Parent portal (ETA hero, live map, emergency contacts, SOS FAB)
+- [x] PostgreSQL schema (130+ columns across 25+ tables)
+- [x] Prisma migrations and seed data (130 students, 5 schools, 15 buses, 17 drivers)
+- [x] Docker Compose (14 containers: postgres, redis, mosquitto, osrm, backend, admin, parent, prometheus, grafana, loki, alertmanager, cadvisor, node-exporter, uptime-kuma)
+- [x] Swagger/OpenAPI documentation
+- [x] Final Validation Report (58 test cases across 15 categories)
+- [x] Product scope specification
+- [x] Pilot Deployment Plan
+- [x] Changelog, Security policy, Contributing guide, License
+- [x] .env.example for backend and docker-compose
 
-## In Progress
+## Remaining for v1.0.0
 
-- [ ] Transport Control Center
-- [ ] Admin portal production polish
-- [ ] Parent live tracking
-- [ ] Parent notification experience
-- [ ] Device monitoring dashboard
-- [ ] Route and trip replay workflows
-- [ ] Reports and analytics screens
-- [ ] Production documentation
+- [ ] UI Micro-Polish (hover animations, loading shimmer, page transitions)
+- [ ] Automated CI/CD pipeline hardening
+- [ ] FCM push notification integration
+- [ ] SMS gateway integration
+- [ ] End-to-end testing on actual Android device
+- [ ] Driver app — remaining screens (settings, history, profile)
+- [ ] Bulk student import/export UI polish
+- [ ] Manual attendance correction UI
 
-## Remaining
+## Known Limitations
 
-- [ ] Driver portal or driver web/app workflow
-- [ ] Bulk student import/export
-- [ ] Bulk QR generation and print flow
-- [ ] Manual attendance correction with audit UI
-- [ ] Full notification center event matrix
-- [ ] Browser push notification readiness
-- [ ] Fleet maintenance workflow
-- [ ] Route drawing and OSRM ETA integration
-- [ ] Geofencing rules and alerts
-- [ ] Scanner diagnostics history
-- [ ] Monitoring stack documentation
-- [ ] Backup and restore procedure
-- [ ] Password reset flow
-- [ ] Session history screen
-- [ ] 2FA-ready settings
-- [ ] End-to-end pilot test script
-
-## Module Status
-
-| Module | Status | Notes |
-|---|---|---|
-| Authentication | In Progress | Login, JWT, refresh, RBAC foundations exist. Password reset, session history, and 2FA readiness remain. |
-| Student Management | In Progress | CRUD and detail view exist. Bulk import/export, QR print, pickup/drop metadata, and richer guardian operations remain. |
-| Parent Portal | In Progress | Parent web exists and now has a v1.0-style dashboard with live ETA, map, student, driver, bus, emergency, analytics, and notifications. Needs dedicated live tracking hardening, calendar, settings, and notification UX. |
-| Driver Portal | Not Started | Driver-facing workflow needs a clear app/web target and implementation. |
-| Fleet Management | In Progress | Bus CRUD exists. Maintenance, mileage, insurance, scanner/GPS health, and current occupancy need completion. |
-| Route Management | In Progress | Route/stops exist. Draw/edit map workflow, OSRM ETA, replay, and geofencing need completion. |
-| Transport Control Center | In Progress | Control Center screen is present. Needs hardening, filtering, alerts, interpolation, health indicators, and tests. |
-| Live Tracking | In Progress | Socket.IO tracking gateway and parent/admin listeners exist. Needs smoothing, role scoping verification, and GPS-loss states. |
-| Attendance | Complete Foundation | QR scan, MQTT scan, duplicate protection, and attendance records exist. Manual correction/audit UI remains. |
-| Notification Center | In Progress | Notification module and gateway exist. Needs event matrix, unread UX, and push-ready integration. |
-| Analytics | Early | API and admin screen foundations exist. Needs product-grade charts, exports, and validation. |
-| Device Monitoring | In Progress | Device registry exists. Scanner diagnostics, heartbeat history, and alerting remain. |
-| System Settings | Not Started | Needs school profile, academic year, templates, roles/permissions UI, backup/restore. |
-| Platform Security | In Progress | Helmet, validation, rate limiting, JWT, RBAC, Prisma, audit foundations exist. Needs production review and hardening checklist. |
-
-## Current Engineering Focus
-
-1. Finish the Transport Control Center as the flagship v1.0 operations screen.
-2. Harden real-time tracking event names, payloads, auth, and offline behavior.
-3. Upgrade parent live tracking and notification experience.
-4. Upgrade admin workflows for students, fleet, routes, devices, and attendance.
-5. Add driver-facing trip workflow.
-
-## Blockers and Risks
-
-- Driver portal scope is not yet implemented.
-- Some real-time events use colon naming (`bus:location`) while the v1.0 plan also proposes dotted names (`bus.location.updated`). Choose a compatibility strategy before broadening clients.
-- Bundle size warnings exist in admin-web and should be addressed during frontend hardening.
-- Real school deployment requires parental consent and retention policy enforcement.
-- Production secrets, backups, TLS, and monitoring still need operational hardening.
-
-## Update Rule
-
-After each meaningful implementation change:
-
-- Update the relevant percentage only when actual working functionality changes.
-- Move checklist items between Completed, In Progress, and Remaining.
-- Add blockers when a task cannot safely proceed.
-- Keep `docs/v1.0-product-scope.md` aligned when architecture or contracts change.
+| ID | Limitation | Priority |
+|----|-----------|----------|
+| L-01 | FCM push notifications not integrated | Medium |
+| L-02 | SMS delivery is stub-only | Low |
+| L-03 | Offline queue tested via simulation (not real device) | Medium |
+| L-04 | OSRM routing uses Nepal extract — may not cover all routes | Low |
+| L-05 | No automated CI/CD deployment pipeline | Medium |

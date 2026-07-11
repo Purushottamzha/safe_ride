@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/Login';
@@ -73,27 +74,30 @@ import IncidentList from './pages/Incidents/IncidentList';
 import IncidentCreate from './pages/Incidents/IncidentCreate';
 import IncidentDetail from './pages/Incidents/IncidentDetail';
 
-// Reports & Analytics
-import ReportsPage from './pages/Reports/ReportsPage';
-import AnalyticsPage from './pages/Analytics/AnalyticsPage';
-
-// Other
-import MaintenancePage from './pages/Maintenance/MaintenancePage';
-import FleetDashboard from './pages/Fleet/FleetDashboard';
-import DriverSafetyPage from './pages/DriverSafety/DriverSafetyPage';
+// Core pages (kept static for fast navigation)
 import NotFound from './pages/NotFound';
-import GateScanner from './pages/GateScanner';
-import DeviceList from './pages/Devices/DeviceList';
-import ControlCenter from './pages/ControlCenter/ControlCenter';
-import QRDashboard from './pages/QRManagement/QRDashboard';
-import StudentQR from './pages/QRManagement/StudentQR';
-import BulkQR from './pages/QRManagement/BulkQR';
-import PrintCards from './pages/QRManagement/PrintCards';
-import ExportQR from './pages/QRManagement/ExportQR';
 import UserProfile from './pages/Profile/UserProfile';
 import SchoolSettings from './pages/Settings/SchoolSettings';
-import AuditLogList from './pages/AuditLogs/AuditLogList';
-import BulkImportExport from './pages/Export/BulkImportExport';
+import GateScanner from './pages/GateScanner';
+import DeviceList from './pages/Devices/DeviceList';
+
+// Heavy pages — lazy loaded
+const ReportsPage = lazy(() => import('./pages/Reports/ReportsPage'));
+const AnalyticsPage = lazy(() => import('./pages/Analytics/AnalyticsPage'));
+const MaintenancePage = lazy(() => import('./pages/Maintenance/MaintenancePage'));
+const FleetDashboard = lazy(() => import('./pages/Fleet/FleetDashboard'));
+const DriverSafetyPage = lazy(() => import('./pages/DriverSafety/DriverSafetyPage'));
+const ControlCenter = lazy(() => import('./pages/ControlCenter/ControlCenter'));
+const QRDashboard = lazy(() => import('./pages/QRManagement/QRDashboard'));
+const StudentQR = lazy(() => import('./pages/QRManagement/StudentQR'));
+const BulkQR = lazy(() => import('./pages/QRManagement/BulkQR'));
+const PrintCards = lazy(() => import('./pages/QRManagement/PrintCards'));
+const ExportQR = lazy(() => import('./pages/QRManagement/ExportQR'));
+const AuditLogList = lazy(() => import('./pages/AuditLogs/AuditLogList'));
+const BulkImportExport = lazy(() => import('./pages/Export/BulkImportExport'));
+const DailyOperations = lazy(() => import('./pages/DailyOperations'));
+const KathmanduTools = lazy(() => import('./pages/KathmanduTools'));
+const GuidedWorkflow = lazy(() => import('./pages/GuidedWorkflow'));
 
 export function createRouter(isAuthenticated: boolean) {
   return createBrowserRouter([
@@ -176,6 +180,9 @@ export function createRouter(isAuthenticated: boolean) {
         { path: 'qr-management/bulk', element: <BulkQR /> },
         { path: 'qr-management/print', element: <PrintCards /> },
         { path: 'qr-management/export', element: <ExportQR /> },
+        { path: 'admission-workflow', element: <GuidedWorkflow /> },
+        { path: 'daily-operations', element: <DailyOperations /> },
+        { path: 'kathmandu-tools', element: <KathmanduTools /> },
       ],
     },
     {

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Card, CardContent, Typography, TextField, Button, IconButton, Tooltip,
+  Box, Typography, TextField, Button, IconButton, Tooltip,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
   CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Chip,
 } from '@mui/material';
 import { QrCode, Refresh, Download, Print, Visibility, Search } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import { qrManagementService } from '../../services/qrManagement';
 import { studentService } from '../../services/students';
 
@@ -87,24 +88,22 @@ export default function StudentQR() {
   return (
     <Box>
       <PageHeader title="Student QR Codes" subtitle="Generate and manage individual student QR codes" />
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by student ID, name, class, section, or bus..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
-          />
-        </CardContent>
-      </Card>
+      <GlassCard sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Search by student ID, name, class, section, or bus..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
+        />
+      </GlassCard>
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
       ) : isError ? (
         <Alert severity="error">Failed to load students</Alert>
       ) : (
-        <Card>
+        <GlassCard sx={{ p: '0 !important' }}>
           <TableContainer>
             <Table>
               <TableHead>
@@ -155,7 +154,7 @@ export default function StudentQR() {
             </Table>
           </TableContainer>
           <TablePagination component="div" count={total} page={page} onPageChange={(_, p) => setPage(p)} rowsPerPage={limit} rowsPerPageOptions={[limit]} />
-        </Card>
+        </GlassCard>
       )}
 
       <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="sm" fullWidth>

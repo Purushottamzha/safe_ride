@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Box, Card, CardContent, Typography, Grid, CircularProgress, Alert } from '@mui/material';
+import { Box, Typography, Grid, CircularProgress, Alert } from '@mui/material';
 import { QrCode, QrCode2, ErrorOutline, Autorenew, AccessTime } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import { qrManagementService } from '../../services/qrManagement';
 
 export default function QRDashboard() {
@@ -37,29 +38,27 @@ export default function QRDashboard() {
         {stats.map((stat, i) => (
           <Grid item xs={12} sm={6} md={3} key={i}>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Card sx={{ position: 'relative', overflow: 'visible' }}>
-                <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <GlassCard sx={{ position: 'relative', overflow: 'visible' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <Box sx={{ color: stat.color }}>{stat.icon}</Box>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 700 }}>{stat.value}</Typography>
                     <Typography variant="body2" color="text.secondary">{stat.label}</Typography>
                   </Box>
-                </CardContent>
-              </Card>
+                </Box>
+              </GlassCard>
             </motion.div>
           </Grid>
         ))}
       </Grid>
-      <Card>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <AccessTime color="action" />
-            <Typography variant="body2" color="text.secondary">
-              Last Generation: {data?.lastGenerationTime ? new Date(data.lastGenerationTime).toLocaleString() : 'Never'}
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+      <GlassCard>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccessTime color="action" />
+          <Typography variant="body2" color="text.secondary">
+            Last Generation: {data?.lastGenerationTime ? new Date(data.lastGenerationTime).toLocaleString() : 'Never'}
+          </Typography>
+        </Box>
+      </GlassCard>
     </Box>
   );
 }

@@ -297,8 +297,11 @@ export interface DashboardStats {
   totalBuses: number;
   activeBuses: number;
   activeTrips: number;
+  completedTrips?: number;
   todayAttendance: { present: number; absent: number; late: number; total: number };
   pendingIncidents: number;
+  maintenanceDue?: number;
+  unreadNotifications?: number;
   weeklyAttendance?: { date: string; present: number; absent: number; late: number }[];
   recentTrips?: { id: string; date: string; type: string; status: string; driverName: string; busPlate: string }[];
   recentActivity?: any[];

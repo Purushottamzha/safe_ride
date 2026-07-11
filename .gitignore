@@ -26,3 +26,7 @@ redis-data/
 # Device-scanner local config (contains MQTT credentials — never commit)
 config.json
 scanner.db
+
+# OSRM generated map data (large build artifacts - regenerated via Docker)
+docker/osrm/data/
+

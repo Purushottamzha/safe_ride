@@ -6,8 +6,6 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Divider,
   Grid,
@@ -45,6 +43,7 @@ import {
   ReportProblem,
 } from '@mui/icons-material';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import StatusBadge from '../../components/common/StatusBadge';
 import { studentService } from '../../services/students';
 import { attendanceService } from '../../services/attendance';
@@ -238,8 +237,8 @@ export default function StudentDetail() {
       <Grid container spacing={3}>
         <Grid item xs={12} lg={4}>
           <Stack spacing={3}>
-            <Card>
-              <CardContent sx={{ p: 3 }}>
+            <GlassCard>
+              
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25 }}>
                   <Avatar
                     src={student.profilePicture}
@@ -282,11 +281,11 @@ export default function StudentDetail() {
                   <InfoLine icon={<Phone fontSize="small" />} label="Student phone" value={student.phone} />
                   <InfoLine icon={<LocalHospital fontSize="small" />} label="Medical and emergency notes" value={student.emergencyNotes || 'No notes recorded'} />
                 </Stack>
-              </CardContent>
-            </Card>
+              
+            </GlassCard>
 
-            <Card>
-              <CardContent sx={{ p: 3 }}>
+            <GlassCard>
+              
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'center', mb: 2 }}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800 }}>
@@ -335,8 +334,8 @@ export default function StudentDetail() {
                     </Button>
                   </Stack>
                 </Stack>
-              </CardContent>
-            </Card>
+              
+            </GlassCard>
           </Stack>
         </Grid>
 
@@ -357,8 +356,8 @@ export default function StudentDetail() {
               </Grid>
             </Grid>
 
-            <Card>
-              <CardContent sx={{ p: 3 }}>
+            <GlassCard>
+              
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-start', mb: 2.5 }}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800 }}>
@@ -407,11 +406,11 @@ export default function StudentDetail() {
                     </Stack>
                   </Grid>
                 </Grid>
-              </CardContent>
-            </Card>
+              
+            </GlassCard>
 
-            <Card>
-              <CardContent sx={{ p: 3 }}>
+            <GlassCard>
+              
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, alignItems: 'flex-start', mb: 2 }}>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800 }}>
@@ -474,8 +473,8 @@ export default function StudentDetail() {
                     </Table>
                   </TableContainer>
                 )}
-              </CardContent>
-            </Card>
+              
+            </GlassCard>
           </Stack>
         </Grid>
       </Grid>

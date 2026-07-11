@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Grid,
-  Card,
-  CardContent,
   Typography,
   TextField,
   Button,
@@ -48,6 +46,7 @@ import {
   Line,
 } from 'recharts';
 import PageHeader from '../../components/common/PageHeader';
+import GlassCard from '../../components/common/GlassCard';
 import { reportService } from '../../services/reports';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f59e0b', '#94a3b8', '#3b82f6'];
@@ -137,9 +136,9 @@ export default function ReportsPage() {
             <Typography variant="body2" color="text.secondary">No attendance data for the selected date range.</Typography>
           </Box>
         ) : (
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Daily Attendance</Typography>
+          <GlassCard>
+            
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Daily Attendance</Typography>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={chartData} barSize={16} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -155,8 +154,8 @@ export default function ReportsPage() {
                   <Bar dataKey="late" name="Late" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            
+          </GlassCard>
         )}
       </Stack>
     );
@@ -184,9 +183,9 @@ export default function ReportsPage() {
         ) : (
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Monthly Attendance Trend</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Monthly Attendance Trend</Typography>
                   <ResponsiveContainer width="100%" height={350}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -197,13 +196,13 @@ export default function ReportsPage() {
                       <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Attendance Breakdown</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Attendance Breakdown</Typography>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -222,13 +221,13 @@ export default function ReportsPage() {
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Monthly Detail</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Monthly Detail</Typography>
                   <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2, maxHeight: 300 }}>
                     <Table size="small" stickyHeader>
                       <TableHead>
@@ -251,8 +250,8 @@ export default function ReportsPage() {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
           </Grid>
         )}
@@ -280,9 +279,9 @@ export default function ReportsPage() {
             <Typography variant="body2" color="text.secondary">No driver performance data available.</Typography>
           </Box>
         ) : (
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Driver On-Time Performance</Typography>
+          <GlassCard>
+            
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Driver On-Time Performance</Typography>
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={chartData} layout="vertical" barSize={20}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -296,13 +295,13 @@ export default function ReportsPage() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            
+          </GlassCard>
         )}
         {chartData.length > 0 && (
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Driver Details</Typography>
+          <GlassCard>
+            
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Driver Details</Typography>
               <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
                 <Table size="small">
                   <TableHead>
@@ -329,8 +328,8 @@ export default function ReportsPage() {
                   </TableBody>
                 </Table>
               </TableContainer>
-            </CardContent>
-          </Card>
+            
+          </GlassCard>
         )}
       </Stack>
     );
@@ -358,9 +357,9 @@ export default function ReportsPage() {
         ) : (
           <Grid container spacing={3}>
             <Grid item xs={12} md={7}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Bus Utilization Rate</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Bus Utilization Rate</Typography>
                   <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={chartData} layout="vertical" barSize={20}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -370,13 +369,13 @@ export default function ReportsPage() {
                       <Bar dataKey="utilizationRate" name="Utilization" fill="#2563eb" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
             <Grid item xs={12} md={5}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Trips Distribution</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Trips Distribution</Typography>
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
@@ -391,13 +390,13 @@ export default function ReportsPage() {
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
             <Grid item xs={12}>
-              <Card sx={{ borderRadius: 3 }}>
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>Bus Details</Typography>
+              <GlassCard>
+                
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Bus Details</Typography>
                   <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
                     <Table size="small">
                       <TableHead>
@@ -424,8 +423,8 @@ export default function ReportsPage() {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                </CardContent>
-              </Card>
+                
+              </GlassCard>
             </Grid>
           </Grid>
         )}
@@ -469,7 +468,7 @@ export default function ReportsPage() {
         <Alert severity="info" sx={{ mb: 3 }}>Select a date range to view report data.</Alert>
       )}
 
-      <Card sx={{ borderRadius: 3 }}>
+      <GlassCard>
         <Tabs
           value={tab}
           onChange={(_, v) => setTab(v)}
@@ -486,13 +485,13 @@ export default function ReportsPage() {
           <Tab icon={<People sx={{ fontSize: 20 }} />} iconPosition="start" label="Driver Performance" />
           <Tab icon={<DirectionsBus sx={{ fontSize: 20 }} />} iconPosition="start" label="Bus Utilization" />
         </Tabs>
-        <CardContent sx={{ p: 3 }}>
+        
           <TabPanel value={tab} index={0}>{renderDailyAttendance()}</TabPanel>
           <TabPanel value={tab} index={1}>{renderMonthlyAttendance()}</TabPanel>
           <TabPanel value={tab} index={2}>{renderDriverPerformance()}</TabPanel>
           <TabPanel value={tab} index={3}>{renderBusUtilization()}</TabPanel>
-        </CardContent>
-      </Card>
+        
+      </GlassCard>
     </motion.div>
   );
 }

@@ -3,7 +3,7 @@
 **Version:** v1.0.0 Release Candidate  
 **Date:** July 2026  
 **Project:** SafeRide Nepal — School Transport Management Platform  
-**Status:** ✅ Release Candidate — All 58 test cases executed
+**Status:** ✅ Release Candidate — All 63 test cases executed
 
 ---
 
@@ -418,7 +418,44 @@ Seeded via `npx prisma db seed` — 130 students, 130 parents, 5 schools, 15 bus
 
 ---
 
-### 3.11 Reports & Analytics
+### 3.11 Demo Mode
+
+#### TC-DEMO-01: Enable Demo Mode
+- **Objective:** Verify demo mode toggle enables the backend simulator
+- **Preconditions:** Backend running, user logged in as admin
+- **Steps:**
+  1. Navigate to Settings → Demo Mode
+  2. Toggle switch to "Active"
+- **Expected:** Backend simulator starts, green "Demo Mode Active" banner appears
+- **Actual:** ✅
+
+#### TC-DEMO-02: Speed Control
+- **Objective:** Verify speed slider controls simulation pace
+- **Steps:** Move slider from 5x to 10x while demo is running
+- **Expected:** Speed chip updates, backend receives speed change
+- **Actual:** ✅
+
+#### TC-DEMO-03: Demo Banner Visibility
+- **Objective:** Verify demo banner appears on all pages
+- **Steps:** Navigate between Dashboard, Students, Buses, Settings
+- **Expected:** Green banner visible on every page
+- **Actual:** ✅
+
+#### TC-DEMO-04: Stop Demo Mode
+- **Objective:** Verify demo mode can be stopped from banner
+- **Steps:** Click stop icon on demo banner
+- **Expected:** Simulator stops, banner disappears, Settings switch returns to "Inactive"
+- **Actual:** ✅
+
+#### TC-DEMO-05: Simulator Auto-starts Active Trips
+- **Objective:** Verify demo creates active trips and bus movements
+- **Steps:** Enable demo mode, navigate to Dashboard or Control Center
+- **Expected:** Active buses appear on map with movement, KPI cards show live data
+- **Actual:** ✅
+
+---
+
+### 3.12 Reports & Analytics
 
 #### TC-RPT-01: Analytics Dashboard
 - **Objective:** Verify analytics page loads
@@ -614,12 +651,13 @@ Seeded via `npx prisma db seed` — 130 students, 130 parents, 5 schools, 15 bus
 | 8 | Fleet Management | 3 | 3 | 0 | ✅ |
 | 9 | Incident Management | 5 | 5 | 0 | ✅ |
 | 10 | Notifications | 4 | 4 | 0 | ✅ |
-| 11 | Reports & Analytics | 2 | 2 | 0 | ✅ |
-| 12 | Integration | 4 | 4 | 0 | ✅ |
-| 13 | Failure & Recovery | 9 | 9 | 0 | ✅ |
-| 14 | Performance | 3 | 3 | 0 | ✅ |
-| 15 | Security | 5 | 5 | 0 | ✅ |
-| | **Total** | **58** | **58** | **0** | ✅ **PASS** |
+| 11 | Demo Mode | 5 | 5 | 0 | ✅ |
+| 12 | Reports & Analytics | 2 | 2 | 0 | ✅ |
+| 13 | Integration | 4 | 4 | 0 | ✅ |
+| 14 | Failure & Recovery | 9 | 9 | 0 | ✅ |
+| 15 | Performance | 3 | 3 | 0 | ✅ |
+| 16 | Security | 5 | 5 | 0 | ✅ |
+| | **Total** | **63** | **63** | **0** | ✅ **PASS** |
 
 ---
 
@@ -637,7 +675,7 @@ Seeded via `npx prisma db seed` — 130 students, 130 parents, 5 schools, 15 bus
 
 ## 11. Conclusion
 
-SafeRide Nepal v1.0.0 Release Candidate has passed **all 58 test cases** across functional, integration, failure/recovery, performance, and security categories. The platform demonstrates:
+SafeRide Nepal v1.0.0 Release Candidate has passed **all 63 test cases** across functional, integration, failure/recovery, performance, and security categories. The platform demonstrates:
 
 - **Reliable QR attendance** with duplicate prevention and bus ownership validation
 - **Real-time communication** via MQTT and Socket.IO with automatic reconnection

@@ -94,7 +94,7 @@ export default function BusList() {
         actions={[{ label: 'Add Bus', to: '/buses/new', variant: 'contained', icon: <Add /> }]}
       />
 
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }} flexWrap="wrap">
         <TextField
           size="small"
           placeholder="Search by plate or bus number..."
@@ -163,7 +163,7 @@ export default function BusList() {
                         borderTopRightRadius: 12,
                       }}
                     />
-                    <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
+                    <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <DirectionsBus sx={{ color: 'primary.main', fontSize: 28 }} />

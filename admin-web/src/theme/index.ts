@@ -144,9 +144,17 @@ export const lightTheme = createTheme({
           borderRadius: 12,
           boxShadow: '0px 1px 3px rgba(0,0,0,0.04), 0px 1px 2px rgba(0,0,0,0.02)',
           border: '1px solid #e2e8f0',
+          transition: 'all 0.2s ease-in-out',
           '&:hover': {
-            boxShadow: '0px 4px 12px rgba(0,0,0,0.06)',
+            boxShadow: '0px 4px 12px rgba(0,0,0,0.08)',
           },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s ease-in-out',
         },
       },
     },
@@ -387,9 +395,17 @@ export const darkTheme = createTheme({
           borderRadius: 12,
           boxShadow: '0px 1px 3px rgba(0,0,0,0.2)',
           border: '1px solid #334155',
+          transition: 'all 0.2s ease-in-out',
           '&:hover': {
             boxShadow: '0px 4px 12px rgba(0,0,0,0.3)',
           },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          transition: 'all 0.2s ease-in-out',
         },
       },
     },

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar, { DRAWER_WIDTH } from './Sidebar';
 import Header from './Header';
+import DemoModeBanner from '../common/DemoModeBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AppLayout() {
@@ -21,6 +22,7 @@ export default function AppLayout() {
         }}
       >
         <Header onDrawerToggle={() => setMobileOpen(!mobileOpen)} />
+        <DemoModeBanner />
         <Box
           component="main"
           sx={{

@@ -22,5 +22,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          charts: ['recharts'],
+          motion: ['framer-motion'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
   },
 });
